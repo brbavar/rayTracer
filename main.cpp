@@ -31,36 +31,62 @@ struct Camera {
 };
 
 struct Sphere {
+    int center[3];
+    int diameter;
 
-
-    Sphere() {
-
+    Sphere(int c[3], int d) {
+        for(int i = 0; i < 3; i++)
+            this->center[i] = c[i];
+        this->diameter = d;
     }
 };
 
 void inputPicProps(int& picHeight, int& picWidth) {
-    std::cout << "How tall should the final image be, in pixels? (Minimum height = 20px) ";
-    std::cin >> picHeight;
-    std::cout << "How wide should the final image be, in pixels? (Minimum width = 20px) ";
-    std::cin >> picWidth;
+    std::cout << "Do you want the image to be 700 pixels tall and 500 pixels wide? (y/n) ";
+    char ans = ' ';
+
+    while(ans != 'y' && ans != 'Y' && ans != 'n' && ans != 'N') {
+        std::cin >> ans;
+        if(ans == 'n' || ans == 'N') {
+            std::cout << "How tall should the image be, in pixels? (Min height = 20px, max = 2160px) ";
+            int min = 20;
+            int max = 2160;
+            std::cin >> picHeight;
+            while(std::cin.fail() || picHeight < min || picHeight > max)
+                std::cout << "Try again. You must enter an integer between " << min << " and " << max 
+                    << " (" << min << ", " << min + 1 << ", " << min + 2 << ", . . . " << max - 1 << ", " << max << "). ";
+
+            std::cout << "\nHow wide should the image be, in pixels? (Min width = 20px, max = 3840px) ";
+            max = 3840;
+            std::cin >> picWidth;
+            while(std::cin.fail() || picHeight < min || picHeight > max)
+                std::cout << "Try again. You must enter an integer between " << min << " and " << max 
+                    << " (" << min << ", " << min + 1 << ", " << min + 2 << ", . . . " << max - 1 << ", " << max << "). ";
+        }
+        else
+            if(ans != 'y' && ans != 'Y') {
+                std::cout << "Sorry, what was that? Your answer must be 'y' (yes) or 'n' (no). ";
+                continue;
+            }
+    }
 }
 
 void traceRays(int picHeight, int picWidth) {
      for(int x = 0; x < picHeight; x++)
          for(int y = 0; y < picWidth; y++) {
-             
+
          }
 }
 
 void inputLightLoc(int light[3]) {
-    std::cout << "Do you want to place the light elsewhere than the origin (0, 0, 0)? (y/n) ";
+    std::cout << "\nDo you want to place the light elsewhere than the origin (0, 0, 0)? (y/n) ";
     char ans = ' ';
 
     while(ans != 'y' && ans != 'Y' && ans != 'n' && ans != 'N') {
         std::cin >> ans;
         if(ans == 'y' || ans == 'Y') {
             std::cout << "\nWhere would you like to place the light source?\nx = ";
-            std::cin >> light[0];
+            std::cin >> light[0];        
             std::cout << "y = ";
             std::cin >> light[1];
             std::cout << "z = ";
@@ -71,38 +97,40 @@ void inputLightLoc(int light[3]) {
                 std::cout << "Sorry, what was that? Your answer must be 'y' (yes) or 'n' (no). ";
                 continue;
             }
-
-        std::cout << "\nOkay, the light will be placed at " 
-            << (light[0] == 0 && light[1] == 0 && light[2] == 0 ? "the origin " : "") 
-            << "(" << light[0] << ", " << light[1] << ", " << light[2] << ")." << std::endl;
     }
 }
 
 void inputShape() {
     std::cout << "\nWhat type of shape would you like to add to the scene? (Options: sphere) ";
     std::string ans = "";
-    
+    int c[3];
+    int d;
 
     while(ans != "sphere") {
         std::cin >> ans;
         if(ans == "sphere") {
-            std::cout << ""
-            std::cin
+            std::cout << "Where should the center of the sphere be?\nx = ";
+            std::cin >> c[0];
+            std::cout << "y = ";
+            std::cin >> c[1];
+            std::cout << "z = ";
+            std::cin >> c[2];
+            std::cout << "What should the diameter of the sphere be, in pixels?\nd = ";
+            std::cin >> d;
+            Sphere ball = Sphere(c, d);
         }
         else {
             std::cout << "Sorry, what was that? Your answer must be \"sphere.\" ";
             continue;
         }
-
     }
 }
 
 int main() {
-    int picHeight, picWidth;
+    int picHeight = 700, picWidth = 500;
     inputPicProps(picHeight, picWidth);
     int light[] = {0, 0, 0};
     inputLightLoc(light);
-    std::cout << light[0] << light[1] << light[2] << std::endl;
     inputShape();
     traceRays(picHeight, picWidth);
 }
