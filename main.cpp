@@ -1,8 +1,22 @@
 #include <iostream>
 #include <string>
 
+void inputPicProps(int&, int&);
+void traceRays();
 void inputLightLoc(int[3], char);
 void inputShape();
+
+struct Color {
+    double red;
+    double green;
+    double blue;
+
+    Color(double r, double g, double b) {
+        this->red = r;
+        this->green = g;
+        this->blue = b;
+    }
+};
 
 struct Camera {
     int sensor[3];
@@ -23,6 +37,20 @@ struct Sphere {
 
     }
 };
+
+void inputPicProps(int& picHeight, int& picWidth) {
+    std::cout << "How tall should the final image be, in pixels? (Minimum height = 20px) ";
+    std::cin >> picHeight;
+    std::cout << "How wide should the final image be, in pixels? (Minimum width = 20px) ";
+    std::cin >> picWidth;
+}
+
+void traceRays(int picHeight, int picWidth) {
+     for(int x = 0; x < picHeight; x++)
+         for(int y = 0; y < picWidth; y++) {
+             
+         }
+}
 
 void inputLightLoc(int light[3]) {
     std::cout << "Do you want to place the light elsewhere than the origin (0, 0, 0)? (y/n) ";
@@ -70,8 +98,11 @@ void inputShape() {
 }
 
 int main() {
+    int picHeight, picWidth;
+    inputPicProps(picHeight, picWidth);
     int light[] = {0, 0, 0};
     inputLightLoc(light);
     std::cout << light[0] << light[1] << light[2] << std::endl;
     inputShape();
+    traceRays(picHeight, picWidth);
 }
