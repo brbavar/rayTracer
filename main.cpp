@@ -39,7 +39,7 @@ struct Matrix3D {
         return x * other.x + y * other.y + z * other.z;
     }
 
-    // Scalar multiplication and cross product represented as *
+    // * serves as both scalar multiplication and cross product operator
     Matrix3D operator*(double scalar) {
         return Matrix3D(x * scalar, y * scalar, z * scalar);
     }
@@ -237,12 +237,11 @@ void savePic(std::vector<std::vector<Color> > px, std::string fileName, int picH
     int fileSize = size + 54;
 
     // Pixels per dot
-    int ppd = 39.375; // Might want to initialize this var as double and cast to int in another var
+    int ppd = 39.375;
 
     // px / in = (dots / in) * (px / dot)
     int ppi = dpi * ppd;
 
-    // Do we need unsigned char instead of char? Former incompatible with write()
     char header[14] = {'B', 'M', 0, 0,   0, 0, 0, 0,   0, 0, 54, 0,   0, 0};
 
     header[2] = (char)fileSize;
@@ -299,16 +298,22 @@ void traceRays(Camera cam, Light light, int picHeight, int picWidth, std::vector
         std::vector<Color> row;
         px.push_back(row);
         for(int x = 0; x < picWidth; x++) {
+            /*
+                Add code that changes cam ray direction for each pixel/iteration
+            */
             std::vector<Matrix3D> points;
             double minDist;
             Matrix3D nearestPt;
+            Shape3D nearestShape;
             for(Shape3D s : shapes) {
                 if(!intersects(s, cam).empty()) { // Could do without this if, after some changes below
                     minDist = cam.distanceTo(intersects(s, cam)[0]);
                     for(Matrix3D m : intersects(s, cam)) {
                         minDist = std::min(minDist, cam.distanceTo(m));
-                        if(minDist == cam.distanceTo(m))
+                        if(minDist == cam.distanceTo(m)) {
                             nearestPt = m;
+                            nearestShape = s;
+                        }
                     }
                 }
             }
@@ -320,7 +325,7 @@ void traceRays(Camera cam, Light light, int picHeight, int picWidth, std::vector
                     break;
                 }
             }
-            Color clr = shaded ? Color(0, 0, 0) : Color(10, 222, 23);
+            Color clr = shaded ? Color(0, 0, 0) : nearestShape.clr;
             px[y].push_back(clr);
             points.clear();
         }
