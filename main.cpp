@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <random>
 
 struct Color {
     double blue, green, red;
@@ -102,9 +103,7 @@ struct Sphere : Shape3D {
     Sphere() {}
 
     Sphere(Matrix3D c, double r, ClrMatrix color) {
-        center.x = c.x, center.y = c.y, center.z = c.z;
-        radius = r;
-        clr = color;
+        center = c, radius = r, clr = color;
     }
 };
 
@@ -183,21 +182,29 @@ struct Camera : Ray {
     }
 };
 
-/* struct PicPlane() {
+struct Plane : Shape3D {
+    Ray normal;
+    Matrix3D center;
+    double height, width;
 
-}; */
+    Plane() {}
+
+    Plane(Ray r, Matrix3D c, double h, double w) {
+        normal = r, center = c, height = h, width = w;
+    }
+};
 
 void inputPicProps(int&, int&);
 void savePic(std::vector<std::vector<Color> >, std::string, int, int, int);
-bool intersects(Sphere sphere, Matrix3D point);
-// bool intersects(PicPlane pic, Matrix3D point);
-bool intersects(Shape3D shape, Matrix3D point);
-void traceRays(Camera, Light, int, int, std::vector<Shape3D>);
+std::vector<Matrix3D> intersects(Sphere, Matrix3D);
+// std::vector<Matrix3D> intersects(Plane, Matrix3D);
+std::vector<Matrix3D> intersects(Shape3D, Matrix3D);
+void traceRays(Light, int, int, std::vector<Shape3D>);
 void inputMatrix(Matrix3D&, std::string);
 std::vector<Shape3D> inputShapes();
 
 void inputPicProps(int& picHeight, int& picWidth) {
-    std::cout << "Do you want the image to be 700 pixels tall and 500 pixels wide? (y/n) ";
+    std::cout << "Do you want the image to be 500 pixels tall and 700 pixels wide? (y/n) ";
     char ans = ' ';
 
     while(ans != 'y' && ans != 'Y' && ans != 'n' && ans != 'N') {
@@ -291,19 +298,49 @@ void savePic(std::vector<std::vector<Color> > px, std::string fileName, int picH
     imgFile.close();
 }
 
-void traceRays(Camera cam, Light light, int picHeight, int picWidth, std::vector<Shape3D> shapes) {
+std::vector<Matrix3D> intersects(Sphere sphere, Ray ray) {     // Unit test this function
+    std::vector<Matrix3D> points;
+
+    double lilDist, bigDist, medDist = (sphere.center - ray).getDotProduct(ray.unitDir);
+    Matrix3D ptBtwn = ray + ray.unitDir * medDist;
+    double offset = sqrt( pow(sphere.radius, 2) - pow((sphere.center - ptBtwn).getMagnitude(), 2) );
+    
+    lilDist = medDist - offset;
+    bigDist = medDist + offset;
+    points.push_back(ray + ray.unitDir * lilDist);
+    points.push_back(ray + ray.unitDir * bigDist);
+    
+    return points;
+}
+
+/* std::vector<Matrix3D> intersects(Plane plane, Ray ray) {    // Unit test this function
+    
+} */
+
+std::vector<Matrix3D> intersects(Shape3D shape, Ray ray) {     // Unit test this function
+    std::cout << "I don't recognize that shape. Couldn't find an intersection if I tried." << std::endl;
+    std::vector<Matrix3D> emptyVec;
+    return emptyVec;
+}
+
+void traceRays(Light light, int picHeight, int picWidth, std::vector<Shape3D> shapes) {
     // Declare 2D vect of pixels/colors
     std::vector<std::vector<Color> > px;
+
+    Matrix3D nonInitPt = Matrix3D(1350, 1250, 20);
+    Matrix3D center = Matrix3D(1350, 1250, 0);  
+    Plane pic = Plane(Ray(center, nonInitPt), center, picHeight, picWidth);
+
     for(int y = 0; y < picHeight; y++) {
         std::vector<Color> row;
         px.push_back(row);
         for(int x = 0; x < picWidth; x++) {
-            /*
-                Add code that changes cam ray direction for each pixel/iteration
-            */
+            // Point camera at current pixel
+            Camera cam = Camera(Ray(Matrix3D(1350, 1250, -1500), Matrix3D(1000.5 + x, 1000.5 + y, 0)));
+
             std::vector<Matrix3D> points;
             double minDist;
-            Matrix3D nearestPt;
+            Matrix3D nearestPt = Matrix3D(-1, -1, -1);
             Shape3D nearestShape;
             for(Shape3D s : shapes) {
                 if(!intersects(s, cam).empty()) { // Could do without this if, after some changes below
@@ -317,15 +354,21 @@ void traceRays(Camera cam, Light light, int picHeight, int picWidth, std::vector
                     }
                 }
             }
-            Ray shadow = Ray(nearestPt, light);
             bool shaded = false;
-            for(Shape3D s : shapes) {
-                if(!intersects(s, shadow).empty()) {
-                    shaded = true;
-                    break;
+            bool background = false;
+            if(nearestPt.x == -1) 
+                background = true;
+            else {
+                Ray shadow = Ray(nearestPt, light);
+                bool shaded = false;
+                for(Shape3D s : shapes) {
+                    if(!intersects(s, shadow).empty()) {
+                        shaded = true;
+                        break;
+                    }
                 }
             }
-            Color clr = shaded ? Color(0, 0, 0) : nearestShape.clr;
+            Color clr = shaded ? Color(0, 0, 0) : ( background ? Color(0, 0, 0) : nearestShape.clr );
             px[y].push_back(clr);
             points.clear();
         }
@@ -398,33 +441,8 @@ std::vector<Shape3D> inputShapes() {
     return shapes;
 }
 
-std::vector<Matrix3D> intersects(Sphere sphere, Ray ray) {     // Unit test this function
-    std::vector<Matrix3D> points;
-
-    double lilDist, bigDist, medDist = (sphere.center - ray).getDotProduct(ray.unitDir);
-    Matrix3D ptBtwn = ray + ray.unitDir * medDist;
-    double offset = sqrt( pow(sphere.radius, 2) - pow((sphere.center - ptBtwn).getMagnitude(), 2) );
-    
-    double lilDist = medDist - offset;
-    double bigDist = medDist + offset;
-    points.push_back(ray + ray.unitDir * lilDist);
-    points.push_back(ray + ray.unitDir * bigDist);
-    
-    return points;
-}
-
-/* std::vector<Matrix3D> intersects(PicPlane plane, Ray ray) {    // Unit test this function
-    
-} */
-
-std::vector<Matrix3D> intersects(Shape3D shape, Ray ray) {     // Unit test this function
-    std::cout << "I don't recognize that shape. Couldn't find an intersection if I tried." << std::endl;
-    std::vector<Matrix3D> emptyVec;
-    return emptyVec;
-}
-
 int main() {
-    std::vector<Shape3D> shapes;
+    /* std::vector<Shape3D> shapes;
     Sphere shape1 = Sphere(Matrix3D(60, 100, 21), 15, ClrMatrix(Color(0, 0, 0), 0));
     Sphere shape2 = Sphere(Matrix3D(106, 8, 700), 8, ClrMatrix(Color(0, 0, 0), 0));
     shapes.push_back(shape1);
@@ -435,13 +453,32 @@ int main() {
     std::cout << "Shape 1 does" << (intersects(shape1, point) ? "" : " NOT") << " intersect (" 
         << point.x << "," << point.y << "," << point.z << ")." << std::endl;
     std::cout << "Shape 2 does" << (intersects(shape2, point) ? "" : " NOT") << " intersect (" 
-        << point.x << "," << point.y << "," << point.z << ")." << std::endl;
+        << point.x << "," << point.y << "," << point.z << ")." << std::endl; */
 
-    /* int picHeight = 700, picWidth = 500;
-    Light light = Light(0, 0, 0);
-    Camera cam = Camera(Ray(Matrix3D(0, 0, 0), Matrix3D(0, 0, 0)));
-    
-    std::vector<Shape3D> shapes = {Sphere(), Sphere(), Sphere()};
+    int picHeight = 500, picWidth = 700;
+    Light light = Light(300, 20, 320);
+
+    std::uniform_real_distribution<double> shapeDistro(1, 99999);
+    std::uniform_real_distribution<double> clrDistro(0, 1); // Should it be from 0 to 255 instead?
+    std::default_random_engine rand;
+
+    Matrix3D center1 = Matrix3D(shapeDistro(rand), shapeDistro(rand), shapeDistro(rand));
+    Matrix3D center2 = Matrix3D(shapeDistro(rand), shapeDistro(rand), shapeDistro(rand));
+    Matrix3D center3 = Matrix3D(shapeDistro(rand), shapeDistro(rand), shapeDistro(rand));
+
+    double radius1 = shapeDistro(rand);
+    double radius2 = shapeDistro(rand);
+    double radius3 = shapeDistro(rand);
+
+    ClrMatrix clr1 = ClrMatrix(Color(clrDistro(rand), clrDistro(rand), clrDistro(rand)), clrDistro(rand));
+    ClrMatrix clr2 = ClrMatrix(Color(clrDistro(rand), clrDistro(rand), clrDistro(rand)), clrDistro(rand));
+    ClrMatrix clr3 = ClrMatrix(Color(clrDistro(rand), clrDistro(rand), clrDistro(rand)), clrDistro(rand));
+
+    std::vector<Shape3D> shapes; 
+    shapes.push_back(Sphere(center1, radius1, clr1)); 
+    shapes.push_back(Sphere(center2, radius2, clr2)); 
+    shapes.push_back(Sphere(center3, radius3, clr3));
+
     char ans = ' ';
     std::cout << "Would you like to design a custom image, or just generate a random one? (c, r) ";
     std::cin >> ans;
@@ -451,9 +488,8 @@ int main() {
     }
     if(ans == 'c') {
         inputPicProps(picHeight, picWidth);
-        inputMatrix(cam, "Camera");
         inputMatrix(light, "Light");
         shapes = inputShapes();
     }
-    traceRays(cam, light, picHeight, picWidth, shapes); */
+    traceRays(light, picHeight, picWidth, shapes);
 }
