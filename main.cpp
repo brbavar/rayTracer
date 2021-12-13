@@ -33,11 +33,13 @@ struct Matrix3D {
         return sqrt( pow((other.x - x), 2) + pow((other.y - y), 2) + pow((other.z - z), 2) );
     }
 
-    double getMagnitude() {
+    // Returns magnitude of vector represented by matrix
+    double mag() {
         return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
     }
 
-    double getDotProduct(Matrix3D other) {
+    // Returns dot product of this vector with another
+    double dot(Matrix3D other) {
         return x * other.x + y * other.y + z * other.z;
     }
 
@@ -59,7 +61,7 @@ struct Matrix3D {
     }
 
     Matrix3D normalize() {
-        double mag = getMagnitude();
+        double mag = this->mag();
         return Matrix3D(x / mag, y / mag, z / mag);
     }
 
@@ -294,9 +296,9 @@ void savePic(std::vector<std::vector<Color> > px, std::string fileName, int picH
 std::vector<Matrix3D> intersects(Sphere sphere, Ray ray) {     // Unit test this function
     std::vector<Matrix3D> points;
 
-    double lilDist, bigDist, medDist = (sphere.center - ray).getDotProduct(ray.unitDir);
+    double lilDist, bigDist, medDist = (sphere.center - ray).dot(ray.unitDir);
     Matrix3D ptBtwn = ray + ray.unitDir * medDist;
-    double offset = sqrt( pow(sphere.radius, 2) - pow((sphere.center - ptBtwn).getMagnitude(), 2) );
+    double offset = sqrt( pow(sphere.radius, 2) - pow((sphere.center - ptBtwn).mag(), 2) );
     
     lilDist = medDist - offset;
     bigDist = medDist + offset;
@@ -330,11 +332,13 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
         for(int x = 0; x < picWidth; x++) {
             // Point camera at current pixel
             Camera cam = Camera(Ray(Matrix3D(450, 350, -1500), Matrix3D(100.5 + x, 100.5 + y, 0)));
+            light.x = -100, light.y = -30, light.z = -10;
 
             std::vector<Matrix3D> points;
             double minDist;
             Matrix3D nearestPt = Matrix3D(-1, -1, -1);
             Shape3D nearestShape;
+            Matrix3D normalDir;
             for(Sphere s : shapes) {
                 if(!intersects(s, cam).empty()) { // Could do without this if, after some changes below
                     minDist = cam.distanceTo(intersects(s, cam)[0]);
@@ -342,13 +346,35 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
                         minDist = std::min(minDist, cam.distanceTo(m));
                         if(minDist == cam.distanceTo(m)) {
                             nearestPt = m;
+                            normalDir = Ray(s.center, nearestPt).unitDir;
                             nearestShape = s;
                         }
                     }
                 }
             }
+            Ray extendedLight = Ray(Matrix3D(light.x, light.y, light.z), nearestPt);
+            Matrix3D lightDir = extendedLight.unitDir;
+            double angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
+            double brightness = 1 - angle / 1.5708;
+            Color clr;
+            if(angle > 1.5708) {
+                clr = Color(0, 0, 0, 1);
+                px[y].push_back(clr);
+                points.clear();
+                continue;
+            }
+            else {
+                nearestShape.clr.blue = 0;
+                nearestShape.clr.green = 0;
+                nearestShape.clr.red = brightness;
+            }
+
             bool shaded = false;
             bool background = false;
+
+            /* If cam ray intersects no shape, set pixel to background color. Otherwise, cast a ray 
+               from the nearest point of intersection to the light source to see if any other shape
+               is in the way, preventing the light from reaching said point of intersection. */
             if(nearestPt.x == -1) 
                 background = true;
             else {
@@ -361,7 +387,8 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
                     }
                 }
             }
-            Color clr = shaded ? Color(0, 0, 0, 1) : ( background ? Color(0, 0, 0, 1) : nearestShape.clr );
+
+            clr = shaded ? Color(0, 0, 0, 1) : ( background ? Color(0, 0, 0, 1) : nearestShape.clr );
             px[y].push_back(clr);
             points.clear();
         }
