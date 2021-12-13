@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <chrono>
 
 struct Color {
     double blue, green, red;
@@ -198,10 +199,11 @@ void inputPicProps(int&, int&);
 void savePic(std::vector<std::vector<Color> >, std::string, int, int, int);
 std::vector<Matrix3D> intersects(Sphere, Matrix3D);
 // std::vector<Matrix3D> intersects(Plane, Matrix3D);
-std::vector<Matrix3D> intersects(Shape3D, Matrix3D);
-void traceRays(Light, int, int, std::vector<Shape3D>);
+// std::vector<Matrix3D> intersects(Shape3D, Matrix3D);
+void traceRays(Light, int, int, std::vector<Sphere> /* std::vector<Shape3D> */);
 void inputMatrix(Matrix3D&, std::string);
-std::vector<Shape3D> inputShapes();
+// std::vector<Shape3D> inputShapes();
+std::vector<Sphere> inputShapes();
 
 void inputPicProps(int& picHeight, int& picWidth) {
     std::cout << "Do you want the image to be 500 pixels tall and 700 pixels wide? (y/n) ";
@@ -317,13 +319,13 @@ std::vector<Matrix3D> intersects(Sphere sphere, Ray ray) {     // Unit test this
     
 } */
 
-std::vector<Matrix3D> intersects(Shape3D shape, Ray ray) {     // Unit test this function
+/* std::vector<Matrix3D> intersects(Shape3D shape, Ray ray) {     // Unit test this function
     std::cout << "I don't recognize that shape. Couldn't find an intersection if I tried." << std::endl;
     std::vector<Matrix3D> emptyVec;
     return emptyVec;
-}
+} */
 
-void traceRays(Light light, int picHeight, int picWidth, std::vector<Shape3D> shapes) {
+void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> shapes /* std::vector<Shape3D> shapes */) {
     // Declare 2D vect of pixels/colors
     std::vector<std::vector<Color> > px;
 
@@ -342,7 +344,7 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Shape3D> sh
             double minDist;
             Matrix3D nearestPt = Matrix3D(-1, -1, -1);
             Shape3D nearestShape;
-            for(Shape3D s : shapes) {
+            for(Sphere s : shapes) {
                 if(!intersects(s, cam).empty()) { // Could do without this if, after some changes below
                     minDist = cam.distanceTo(intersects(s, cam)[0]);
                     for(Matrix3D m : intersects(s, cam)) {
@@ -361,7 +363,7 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Shape3D> sh
             else {
                 Ray shadow = Ray(nearestPt, light);
                 bool shaded = false;
-                for(Shape3D s : shapes) {
+                for(Sphere s : shapes) {
                     if(!intersects(s, shadow).empty()) {
                         shaded = true;
                         break;
@@ -401,8 +403,9 @@ void inputMatrix(Matrix3D& matrix, std::string type) {
     }
 }
 
-std::vector<Shape3D> inputShapes() {
-    std::vector<Shape3D> shapes;
+std::vector<Sphere> inputShapes() {
+    // std::vector<Shape3D> shapes;
+    std::vector<Sphere> shapes;
 
     std::cout << "\nWhat type of shape would you like to add to the scene? (Options: sphere) ";
     std::string ans = "";
@@ -458,26 +461,36 @@ int main() {
     int picHeight = 500, picWidth = 700;
     Light light = Light(300, 20, 320);
 
+    unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
+    std::default_random_engine re(seed);
     std::uniform_real_distribution<double> shapeDistro(1, 99999);
     std::uniform_real_distribution<double> clrDistro(0, 1); // Should it be from 0 to 255 instead?
-    std::default_random_engine rand;
 
-    Matrix3D center1 = Matrix3D(shapeDistro(rand), shapeDistro(rand), shapeDistro(rand));
-    Matrix3D center2 = Matrix3D(shapeDistro(rand), shapeDistro(rand), shapeDistro(rand));
-    Matrix3D center3 = Matrix3D(shapeDistro(rand), shapeDistro(rand), shapeDistro(rand));
+    Matrix3D center1 = Matrix3D(shapeDistro(re), shapeDistro(re), shapeDistro(re));
+    Matrix3D center2 = Matrix3D(shapeDistro(re), shapeDistro(re), shapeDistro(re));
+    Matrix3D center3 = Matrix3D(shapeDistro(re), shapeDistro(re), shapeDistro(re));
 
-    double radius1 = shapeDistro(rand);
-    double radius2 = shapeDistro(rand);
-    double radius3 = shapeDistro(rand);
+    double radius1 = shapeDistro(re);
+    double radius2 = shapeDistro(re);
+    double radius3 = shapeDistro(re);
 
-    ClrMatrix clr1 = ClrMatrix(Color(clrDistro(rand), clrDistro(rand), clrDistro(rand)), clrDistro(rand));
-    ClrMatrix clr2 = ClrMatrix(Color(clrDistro(rand), clrDistro(rand), clrDistro(rand)), clrDistro(rand));
-    ClrMatrix clr3 = ClrMatrix(Color(clrDistro(rand), clrDistro(rand), clrDistro(rand)), clrDistro(rand));
+    ClrMatrix clr1 = ClrMatrix(Color(clrDistro(re), clrDistro(re), clrDistro(re)), clrDistro(re));
+    ClrMatrix clr2 = ClrMatrix(Color(clrDistro(re), clrDistro(re), clrDistro(re)), clrDistro(re));
+    ClrMatrix clr3 = ClrMatrix(Color(clrDistro(re), clrDistro(re), clrDistro(re)), clrDistro(re));
 
-    std::vector<Shape3D> shapes; 
+    // std::vector<Shape3D> shapes;
+    std::vector<Sphere> shapes;
     shapes.push_back(Sphere(center1, radius1, clr1)); 
     shapes.push_back(Sphere(center2, radius2, clr2)); 
     shapes.push_back(Sphere(center3, radius3, clr3));
+
+    std::cout << "x = " << center1.x << ", y = " << center1.y << ", z = " << center1.z << ", r = " << radius1 << std::endl;
+    std::cout << "x = " << center2.x << ", y = " << center2.y << ", z = " << center2.z << ", r = " << radius2 << std::endl;
+    std::cout << "x = " << center3.x << ", y = " << center3.y << ", z = " << center3.z << ", r = " << radius3 << std::endl;
+
+    std::cout << "b = " << clr1.x << ", g = " << clr1.y << ", r = " << clr1.z << std::endl;
+    std::cout << "b = " << clr2.x << ", g = " << clr2.y << ", r = " << clr2.z << std::endl;
+    std::cout << "b = " << clr3.x << ", g = " << clr3.y << ", r = " << clr3.z << std::endl;
 
     char ans = ' ';
     std::cout << "Would you like to design a custom image, or just generate a random one? (c, r) ";
