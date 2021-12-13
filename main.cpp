@@ -7,12 +7,12 @@
 #include <chrono>
 
 struct Color {
-    double blue, green, red;
+    double blue, green, red, opacity;
 
     Color() {}
 
-    Color(double b, double g, double r) {
-        blue = b, green = g, red = r;
+    Color(double b, double g, double r, double o) {
+        blue = b, green = g, red = r, opacity = o;
     }
 };
 
@@ -68,31 +68,22 @@ struct Matrix3D {
     }
 };
 
-struct ClrMatrix : Color, Matrix3D {
-    double shine;
-
-    ClrMatrix() {}
-
-    ClrMatrix(Color clr, double s) {
-        blue = clr.blue, green = clr.green, red = clr.red, shine = s;
-        x = blue, y = green, z = red;
-    }
-};
-
 struct Light : Matrix3D {
+    Color clr;
+
     Light() {}
 
-    Light(double comp1, double comp2, double comp3) {
-        x = comp1, y = comp2, z = comp3;
+    Light(double comp1, double comp2, double comp3, Color color) {
+        x = comp1, y = comp2, z = comp3, clr = color;
     }
 };
 
 struct Shape3D {
-    ClrMatrix clr;
+    Color clr;
 
     Shape3D() {}
 
-    Shape3D(ClrMatrix color) {
+    Shape3D(Color color) {
         clr = color;
     }
 };
@@ -103,7 +94,7 @@ struct Sphere : Shape3D {
 
     Sphere() {}
 
-    Sphere(Matrix3D c, double r, ClrMatrix color) {
+    Sphere(Matrix3D c, double r, Color color) {
         center = c, radius = r, clr = color;
     }
 };
@@ -201,7 +192,7 @@ std::vector<Matrix3D> intersects(Sphere, Matrix3D);
 // std::vector<Matrix3D> intersects(Plane, Matrix3D);
 // std::vector<Matrix3D> intersects(Shape3D, Matrix3D);
 void traceRays(Light, int, int, std::vector<Sphere> /* std::vector<Shape3D> */);
-void inputMatrix(Matrix3D&, std::string);
+void inputLight(Light&);
 // std::vector<Shape3D> inputShapes();
 std::vector<Sphere> inputShapes();
 
@@ -292,8 +283,8 @@ void savePic(std::vector<std::vector<Color> > px, std::string fileName, int picH
 
     for(int y = 0; y < picHeight; y++) {
         for(int x = 0; x < picWidth; x++) {
-            char pixel[3] = {floor(px[y][x].blue * 255), floor(px[y][x].green * 255), floor(px[y][x].red * 255)}; // Maybe don't multiply
-            imgFile.write(pixel, 3);                                                                                // these (by 255)?
+            char pixel[3] = {floor(px[y][x].blue * 255), floor(px[y][x].green * 255), floor(px[y][x].red * 255)};
+            imgFile.write(pixel, 3);
         }
     }
 
@@ -329,8 +320,8 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
     // Declare 2D vect of pixels/colors
     std::vector<std::vector<Color> > px;
 
-    Matrix3D nonInitPt = Matrix3D(1350, 1250, 20);
-    Matrix3D center = Matrix3D(1350, 1250, 0);  
+    Matrix3D nonInitPt = Matrix3D(450, 350, 20);
+    Matrix3D center = Matrix3D(450, 350, 0);
     Plane pic = Plane(Ray(center, nonInitPt), center, picHeight, picWidth);
 
     for(int y = 0; y < picHeight; y++) {
@@ -338,7 +329,7 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
         px.push_back(row);
         for(int x = 0; x < picWidth; x++) {
             // Point camera at current pixel
-            Camera cam = Camera(Ray(Matrix3D(1350, 1250, -1500), Matrix3D(1000.5 + x, 1000.5 + y, 0)));
+            Camera cam = Camera(Ray(Matrix3D(450, 350, -1500), Matrix3D(100.5 + x, 100.5 + y, 0)));
 
             std::vector<Matrix3D> points;
             double minDist;
@@ -370,7 +361,7 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
                     }
                 }
             }
-            Color clr = shaded ? Color(0, 0, 0) : ( background ? Color(0, 0, 0) : nearestShape.clr );
+            Color clr = shaded ? Color(0, 0, 0, 1) : ( background ? Color(0, 0, 0, 1) : nearestShape.clr );
             px[y].push_back(clr);
             points.clear();
         }
@@ -379,21 +370,27 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
     savePic(px, "result.bmp", picHeight, picWidth, 50);
 }
 
-void inputMatrix(Matrix3D& matrix, std::string type) {
-    std::cout << "\nDo you want to place the " << (type == "Camera" ? "camera" : "light") 
-        << " elsewhere than the origin (0, 0, 0)? (y/n) ";
+void inputLight(Light& light) {
+    std::cout << "\nDo you want to place the light source elsewhere than (" << light.x << ", " 
+        << light.y << ", " << light.z << ")? (y/n) ";
     char ans = ' ';
 
     while(ans != 'y' && ans != 'Y' && ans != 'n' && ans != 'N') {
         std::cin >> ans;
         if(ans == 'y' || ans == 'Y') {
-            std::cout << "\nWhere would you like to place the " 
-                << (type == "Camera" ? "camera sensor" : "light source") << "?\nx = ";
-            std::cin >> matrix.x;        
+            std::cout << "\nWhere would you like to place the light source?\nx = ";
+            std::cin >> light.x;        
             std::cout << "y = ";
-            std::cin >> matrix.y;
+            std::cin >> light.y;
             std::cout << "z = ";
-            std::cin >> matrix.z;
+            std::cin >> light.z;
+
+            std::cout << "Sounds good. What color should the light be? Give the RGB values. \n r = ";
+            std::cin >> light.clr.red;
+            std::cout << "g = ";
+            std::cin >> light.clr.green;
+            std::cout << "b = ";
+            std::cin >> light.clr.blue;
         }
         else
             if(ans != 'n' && ans != 'N') {
@@ -411,27 +408,32 @@ std::vector<Sphere> inputShapes() {
     std::string ans = "";
     Matrix3D c;
     double r;
-    ClrMatrix clr = ClrMatrix();
+    Color clr = Color();
 
     while(ans != "sphere") {
         std::cin >> ans;
         if(ans == "sphere") {
-            std::cout << "Where should the center of the sphere be?\nx = ";
+            std::cout << "Nice choice. Where should the center of the sphere be?\nx = ";
             std::cin >> c.x;
             std::cout << "y = ";
             std::cin >> c.y;
             std::cout << "z = ";
             std::cin >> c.z;
 
-            std::cout << "What should the radius of the sphere be?\nd = ";
+            std::cout << "All right. What should the radius of the sphere be?\nd = ";
             std::cin >> r;
 
-            std::cout << "What color should the sphere be painted? Give the RGB values. \nr = ";
+            std::cout << "Splendid! What color should the sphere be painted? Give the RGB values. \nr = ";
             std::cin >> clr.red;
             std::cout << "g = ";
             std::cin >> clr.green;
             std::cout << "b = ";
             std::cin >> clr.blue;
+
+            std::cout << "One more thing: How see-through should the sphere be, on a scale of 0 to 10 (0 being not "
+                << "at all see-through, and 10 being as see-through as possible)? ";
+            std::cin >> clr.opacity;
+            clr.opacity = (10 - clr.opacity) / 10;
 
             shapes.push_back(Sphere(c, r, clr));
         }
@@ -444,55 +446,27 @@ std::vector<Sphere> inputShapes() {
     return shapes;
 }
 
+/* fresnelize() {
+
+} */
+
 int main() {
-    /* std::vector<Shape3D> shapes;
-    Sphere shape1 = Sphere(Matrix3D(60, 100, 21), 15, ClrMatrix(Color(0, 0, 0), 0));
-    Sphere shape2 = Sphere(Matrix3D(106, 8, 700), 8, ClrMatrix(Color(0, 0, 0), 0));
-    shapes.push_back(shape1);
-    shapes.push_back(shape2);
-
-    Matrix3D point = Matrix3D(106, 8, 692);
-
-    std::cout << "Shape 1 does" << (intersects(shape1, point) ? "" : " NOT") << " intersect (" 
-        << point.x << "," << point.y << "," << point.z << ")." << std::endl;
-    std::cout << "Shape 2 does" << (intersects(shape2, point) ? "" : " NOT") << " intersect (" 
-        << point.x << "," << point.y << "," << point.z << ")." << std::endl; */
-
-    int picHeight = 500, picWidth = 700;
-    Light light = Light(300, 20, 320);
-
     unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
     std::default_random_engine re(seed);
-    std::uniform_real_distribution<double> shapeDistro(1, 99999);
-    std::uniform_real_distribution<double> clrDistro(0, 1); // Should it be from 0 to 255 instead?
+    std::uniform_int_distribution<int> shapeCountDistro(1, 10);
+    std::uniform_real_distribution<double> xDistro(1, 899);
+    std::uniform_real_distribution<double> yDistro(1, 699);
+    std::uniform_real_distribution<double> zDistro(1, 10);
+    std::normal_distribution<double> radDistro(100, 20);
+    std::uniform_real_distribution<double> clrDistro(0, 1);
 
-    Matrix3D center1 = Matrix3D(shapeDistro(re), shapeDistro(re), shapeDistro(re));
-    Matrix3D center2 = Matrix3D(shapeDistro(re), shapeDistro(re), shapeDistro(re));
-    Matrix3D center3 = Matrix3D(shapeDistro(re), shapeDistro(re), shapeDistro(re));
-
-    double radius1 = shapeDistro(re);
-    double radius2 = shapeDistro(re);
-    double radius3 = shapeDistro(re);
-
-    ClrMatrix clr1 = ClrMatrix(Color(clrDistro(re), clrDistro(re), clrDistro(re)), clrDistro(re));
-    ClrMatrix clr2 = ClrMatrix(Color(clrDistro(re), clrDistro(re), clrDistro(re)), clrDistro(re));
-    ClrMatrix clr3 = ClrMatrix(Color(clrDistro(re), clrDistro(re), clrDistro(re)), clrDistro(re));
-
+    Color lightClr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
+    Light light = Light(xDistro(re), yDistro(re), zDistro(re), lightClr);
     // std::vector<Shape3D> shapes;
     std::vector<Sphere> shapes;
-    shapes.push_back(Sphere(center1, radius1, clr1)); 
-    shapes.push_back(Sphere(center2, radius2, clr2)); 
-    shapes.push_back(Sphere(center3, radius3, clr3));
-
-    std::cout << "x = " << center1.x << ", y = " << center1.y << ", z = " << center1.z << ", r = " << radius1 << std::endl;
-    std::cout << "x = " << center2.x << ", y = " << center2.y << ", z = " << center2.z << ", r = " << radius2 << std::endl;
-    std::cout << "x = " << center3.x << ", y = " << center3.y << ", z = " << center3.z << ", r = " << radius3 << std::endl;
-
-    std::cout << "b = " << clr1.x << ", g = " << clr1.y << ", r = " << clr1.z << std::endl;
-    std::cout << "b = " << clr2.x << ", g = " << clr2.y << ", r = " << clr2.z << std::endl;
-    std::cout << "b = " << clr3.x << ", g = " << clr3.y << ", r = " << clr3.z << std::endl;
-
+    int picHeight = 500, picWidth = 700;
     char ans = ' ';
+
     std::cout << "Would you like to design a custom image, or just generate a random one? (c, r) ";
     std::cin >> ans;
     while(ans != 'c' && ans != 'r') {
@@ -501,8 +475,28 @@ int main() {
     }
     if(ans == 'c') {
         inputPicProps(picHeight, picWidth);
-        inputMatrix(light, "Light");
+        inputLight(light);
         shapes = inputShapes();
     }
+    else {
+        int shapeCount = shapeCountDistro(re);
+
+        std::cout << shapeCount << std::endl;
+        std::cout << std::endl;
+
+        for(int i = 0; i < shapeCount; i++) {
+            Matrix3D center = Matrix3D(xDistro(re), yDistro(re), zDistro(re));
+            double radius = radDistro(re);
+            Color clr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
+
+            shapes.push_back(Sphere(center, radius, clr));
+
+            std::cout << "x = " << center.x << ", y = " << center.y << ", z = " << center.z << ", r = " << radius << std::endl;
+            std::cout << "b = " << clr.blue << ", g = " << clr.green << ", r = " << clr.red << ", o = " << clr.opacity << std::endl;
+            std::cout << "i = " << i << std::endl;
+            std::cout << std::endl;
+        }
+    }
+
     traceRays(light, picHeight, picWidth, shapes);
 }
