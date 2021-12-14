@@ -1,167 +1,141 @@
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <vector>
 #include <cmath>
 #include <random>
 #include <chrono>
+#include "shape.h"
 
-struct Color {
-    double blue, green, red, opacity;
 
-    Color() {}
+Color::Color() {}
 
-    Color(double b, double g, double r, double o) {
-        blue = b, green = g, red = r, opacity = o;
-    }
-};
+Color::Color(double b, double g, double r, double o) {
+    blue = b, green = g, red = r, opacity = o;
+}
 
-struct Matrix3D {
-    double x, y, z;
 
-    Matrix3D() {}
+Matrix3D::Matrix3D() {}
 
-    Matrix3D(const Matrix3D& orig) {
-        x = orig.x, y = orig.y, z = orig.z;
-    }
+Matrix3D::Matrix3D(const Matrix3D& orig) {
+    x = orig.x, y = orig.y, z = orig.z;
+}
 
-    Matrix3D(double comp1, double comp2, double comp3) {
-        x = comp1, y = comp2, z = comp3;
-    }
+Matrix3D::Matrix3D(double comp1, double comp2, double comp3) {
+    x = comp1, y = comp2, z = comp3;
+}
 
-    double distanceTo(Matrix3D other) {
-        return sqrt( pow((other.x - x), 2) + pow((other.y - y), 2) + pow((other.z - z), 2) );
-    }
+double Matrix3D::distanceTo(Matrix3D other) {
+    return sqrt( pow((other.x - x), 2) + pow((other.y - y), 2) + pow((other.z - z), 2) );
+}
 
-    // Returns magnitude of vector represented by matrix
-    double mag() {
-        return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
-    }
+double Matrix3D::mag() {
+    return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+}
 
-    // Returns dot product of this vector with another
-    double dot(Matrix3D other) {
-        return x * other.x + y * other.y + z * other.z;
-    }
+double Matrix3D::dot(Matrix3D other) {
+    return x * other.x + y * other.y + z * other.z;
+}
 
-    // * serves as both scalar multiplication and cross product operator
-    Matrix3D operator*(double scalar) {
-        return Matrix3D(x * scalar, y * scalar, z * scalar);
-    }
+Matrix3D Matrix3D::operator*(double scalar) {
+    return Matrix3D(x * scalar, y * scalar, z * scalar);
+}
 
-    Matrix3D operator*(Matrix3D other) {
-        return Matrix3D(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x);
-    }
+Matrix3D Matrix3D::operator*(Matrix3D other) {
+    return Matrix3D(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x);
+}
 
-    Matrix3D operator+(Matrix3D other) {
-        return Matrix3D(x + other.x, y + other.y, z + other.z);
-    }
+Matrix3D Matrix3D::operator+(Matrix3D other) {
+    return Matrix3D(x + other.x, y + other.y, z + other.z);
+}
 
-    Matrix3D operator-(Matrix3D other) {
-        return Matrix3D(x - other.x, y - other.y, z - other.z);
-    }
+Matrix3D Matrix3D::operator-(Matrix3D other) {
+    return Matrix3D(x - other.x, y - other.y, z - other.z);
+}
 
-    Matrix3D normalize() {
-        double mag = this->mag();
-        return Matrix3D(x / mag, y / mag, z / mag);
-    }
+Matrix3D Matrix3D::normalize() {
+    double mag = this->mag();
+    return Matrix3D(x / mag, y / mag, z / mag);
+}
 
-    Matrix3D invert() {
-        return Matrix3D(-x, -y, -z);
-    }
-};
+Matrix3D Matrix3D::invert() {
+    return Matrix3D(-x, -y, -z);
+}
 
-struct Light : Matrix3D {
-    Color clr;
 
-    Light() {}
+Light::Light() {}
 
-    Light(double comp1, double comp2, double comp3, Color color) {
-        x = comp1, y = comp2, z = comp3, clr = color;
-    }
-};
+Light::Light(double comp1, double comp2, double comp3, Color color) {
+    x = comp1, y = comp2, z = comp3, clr = color;
+}
 
-struct Ray : Matrix3D {
-    Matrix3D unitDir;
-    
-    Ray() {}
 
-    // Subtract coordinates of initial point from those of non-initial point,
-    // then normalize, and you get unit vector pointing same direction that ray points
-    Ray(Matrix3D initPt, Matrix3D nonInitPt) {
-        x = initPt.x, y = initPt.y, z = initPt.z;
-        unitDir = Matrix3D(nonInitPt.x - x, nonInitPt.y - y, nonInitPt.z - z).normalize();
-    }
-};
+Ray::Ray() {}
 
-struct Camera : Ray {
-    Camera() {}
+/* Subtract coordinates of initial point from those of non-initial point,
+    then normalize, and you get unit vector pointing same direction that ray points. */
+Ray::Ray(Matrix3D initPt, Matrix3D nonInitPt) {
+    x = initPt.x, y = initPt.y, z = initPt.z;
+    unitDir = Matrix3D(nonInitPt.x - x, nonInitPt.y - y, nonInitPt.z - z).normalize();
+}
 
-    Camera(Ray ray) {
-        x = ray.x, y = ray.y, z = ray.z, unitDir = ray.unitDir;
-    }
-};
+Camera::Camera() {}
 
-struct Shape3D {
-    Matrix3D center;
-    double radius, height, width;
-    Ray normal;
-    Color clr;
-    std::string type = "";
+Camera::Camera(Ray ray) {
+    x = ray.x, y = ray.y, z = ray.z, unitDir = ray.unitDir;
+}
 
-    Shape3D() {}
 
-    Shape3D(Color color) {
-        clr = color;
-    }
+Shape3D::Shape3D() {}
 
-    std::vector<Matrix3D> intersects(Ray ray) {
-        std::vector<Matrix3D> points;
-        if(this->type == "Sphere") {
-            double lilDist, bigDist, medDist = (this->center - ray).dot(ray.unitDir);
-            Matrix3D ptBtwn = ray + ray.unitDir * medDist;
-            double offset = sqrt( pow(this->radius, 2) - pow((this->center - ptBtwn).mag(), 2) );
-            
-            lilDist = medDist - offset;
-            bigDist = medDist + offset;
-            points.push_back(ray + ray.unitDir * lilDist);
-            points.push_back(ray + ray.unitDir * bigDist);
-    
-            return points;
-        }
-        /* if(this->type == "Plane") {
+Shape3D::Shape3D(Color color) {
+    clr = color;
+}
 
-        } */
+std::vector<Matrix3D> Shape3D::intersects(Ray ray) {
+    std::vector<Matrix3D> points;
+    if(this->type == "Sphere") {
+        double lilDist, bigDist, medDist = (this->center - ray).dot(ray.unitDir);
+        Matrix3D ptBtwn = ray + ray.unitDir * medDist;
+        double offset = sqrt( pow(this->radius, 2) - pow((this->center - ptBtwn).mag(), 2) );
         
-        std::cout << "I don't recognize that shape. Couldn't find an intersection if I tried." << std::endl;
+        lilDist = medDist - offset;
+        bigDist = medDist + offset;
+        points.push_back(ray + ray.unitDir * lilDist);
+        points.push_back(ray + ray.unitDir * bigDist);
+
         return points;
     }
-};
+    /* if(this->type == "Plane") {
 
-struct Sphere : Shape3D {
-    Sphere() {
-        type = "Sphere";
-    }
+    } */
+    
+    std::cout << "I don't recognize that shape. Couldn't find an intersection if I tried." << std::endl;
+    return points;
+}
 
-    Sphere(Matrix3D c, double r, Color color) {
-        center = c, radius = r, clr = color, type = "Sphere";
-    }
-};
+Sphere::Sphere() {
+    type = "Sphere";
+}
 
-struct Plane : Shape3D {
-    Plane() {
-        type = "Plane";
-    }
+Sphere::Sphere(Matrix3D c, double r, Color color) {
+    center = c, radius = r, clr = color, type = "Sphere";
+}
 
-    Plane(Ray r, Matrix3D c, double h, double w) {
-        normal = r, center = c, height = h, width = w, type = "Plane";
-    }
-};
+Plane::Plane() {
+    type = "Plane";
+}
+
+Plane::Plane(Ray r, Matrix3D c, double h, double w) {
+    normal = r, center = c, height = h, width = w, type = "Plane";
+}
+
 
 void inputPicProps(int&, int&);
 void savePic(std::vector<std::vector<Color> >, std::string, int, int, int);
 void traceRays(Light, int, int, std::vector<Shape3D>);
 void inputLight(Light&);
 std::vector<Shape3D> inputShapes();
+
 
 void inputPicProps(int& picHeight, int& picWidth) {
     std::cout << "Do you want the image to be 500 pixels tall and 700 pixels wide? (y/n) ";
@@ -425,6 +399,7 @@ std::vector<Shape3D> inputShapes() {
 /* fresnelize() {
 
 } */
+
 
 int main() {
     unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
