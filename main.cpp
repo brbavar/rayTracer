@@ -80,81 +80,6 @@ struct Light : Matrix3D {
     }
 };
 
-struct Shape3D {
-    Color clr;
-
-    Shape3D() {}
-
-    Shape3D(Color color) {
-        clr = color;
-    }
-};
-
-struct Sphere : Shape3D {
-    Matrix3D center;
-    double radius;
-
-    Sphere() {}
-
-    Sphere(Matrix3D c, double r, Color color) {
-        center = c, radius = r, clr = color;
-    }
-};
-
-/* 
-namespace pointKnown {
-    struct Ray : Matrix3D {
-        Matrix3D unitDir;
-        
-        Ray() {}
-
-        // Subtract coordinates of initial point from those of non-initial point,
-        // then normalize, and you get unit vector pointing same direction that ray points
-        Ray(Matrix3D initPt, Matrix3D nonInitPt) {
-            x = initPt.x, y = initPt.y, z = initPt.z;
-            unitDir = Matrix3D(nonInitPt.x - x, nonInitPt.y - y, nonInitPt.z - z).normalize();
-        }
-    };
-}
-
-namespace dirKnown {
-    struct Ray : Matrix3D {
-        Matrix3D unitDir;
-
-        Ray() {}
-
-        Ray(Matrix3D initPt, Matrix3D dir) {
-            x = initPt.x, y = initPt.y, z = initPt.z;
-            unitDir = dir;
-        }
-
-        Ray operator+(Matrix3D other) {                // May be able to delete this function, and
-            return Ray(Matrix3D(x, y, z) + other, unitDir); // the namespaces along with it; no longer
-        }                                               // adding rays anywhere, it seems
-
-        std::vector<Matrix3D> intersections(std::vector<Shape3D> shapes) {  // Unit test this function
-            std::vector<Matrix3D> points;
-            for(Shape3D shape : shapes) {
-                if(!intersects(shape, *this).empty()) {
-                    for(Matrix3D m : intersects(shape, *this))
-                        points.push_back(m);
-                    continue;
-                }
-            }
-            return points;
-        }
-    };
-}
-
-struct Camera : dirKnown::Ray { // pointKnown::Ray instead?
-    Camera() {}
-
-    Camera(Matrix3D initPt, Matrix3D dir) {
-        Ray ray = Ray(initPt, dir);
-        x = ray.x, y = ray.y, z = ray.z, unitDir = ray.unitDir;
-    }
-}; */
-
 struct Ray : Matrix3D {
     Matrix3D unitDir;
     
@@ -176,27 +101,67 @@ struct Camera : Ray {
     }
 };
 
-struct Plane : Shape3D {
-    Ray normal;
+struct Shape3D {
     Matrix3D center;
-    double height, width;
+    double radius, height, width;
+    Ray normal;
+    Color clr;
+    std::string type = "";
 
-    Plane() {}
+    Shape3D() {}
+
+    Shape3D(Color color) {
+        clr = color;
+    }
+
+    std::vector<Matrix3D> intersects(Ray ray) {
+        std::vector<Matrix3D> points;
+        if(this->type == "Sphere") {
+            double lilDist, bigDist, medDist = (this->center - ray).dot(ray.unitDir);
+            Matrix3D ptBtwn = ray + ray.unitDir * medDist;
+            double offset = sqrt( pow(this->radius, 2) - pow((this->center - ptBtwn).mag(), 2) );
+            
+            lilDist = medDist - offset;
+            bigDist = medDist + offset;
+            points.push_back(ray + ray.unitDir * lilDist);
+            points.push_back(ray + ray.unitDir * bigDist);
+    
+            return points;
+        }
+        /* if(this->type == "Plane") {
+
+        } */
+        
+        std::cout << "I don't recognize that shape. Couldn't find an intersection if I tried." << std::endl;
+        return points;
+    }
+};
+
+struct Sphere : Shape3D {
+    Sphere() {
+        type = "Sphere";
+    }
+
+    Sphere(Matrix3D c, double r, Color color) {
+        center = c, radius = r, clr = color, type = "Sphere";
+    }
+};
+
+struct Plane : Shape3D {
+    Plane() {
+        type = "Plane";
+    }
 
     Plane(Ray r, Matrix3D c, double h, double w) {
-        normal = r, center = c, height = h, width = w;
+        normal = r, center = c, height = h, width = w, type = "Plane";
     }
 };
 
 void inputPicProps(int&, int&);
 void savePic(std::vector<std::vector<Color> >, std::string, int, int, int);
-std::vector<Matrix3D> intersects(Sphere, Matrix3D);
-// std::vector<Matrix3D> intersects(Plane, Matrix3D);
-// std::vector<Matrix3D> intersects(Shape3D, Matrix3D);
-void traceRays(Light, int, int, std::vector<Sphere> /* std::vector<Shape3D> */);
+void traceRays(Light, int, int, std::vector<Shape3D>);
 void inputLight(Light&);
-// std::vector<Shape3D> inputShapes();
-std::vector<Sphere> inputShapes();
+std::vector<Shape3D> inputShapes();
 
 void inputPicProps(int& picHeight, int& picWidth) {
     std::cout << "Do you want the image to be 500 pixels tall and 700 pixels wide? (y/n) ";
@@ -293,32 +258,7 @@ void savePic(std::vector<std::vector<Color> > px, std::string fileName, int picH
     imgFile.close();
 }
 
-std::vector<Matrix3D> intersects(Sphere sphere, Ray ray) {     // Unit test this function
-    std::vector<Matrix3D> points;
-
-    double lilDist, bigDist, medDist = (sphere.center - ray).dot(ray.unitDir);
-    Matrix3D ptBtwn = ray + ray.unitDir * medDist;
-    double offset = sqrt( pow(sphere.radius, 2) - pow((sphere.center - ptBtwn).mag(), 2) );
-    
-    lilDist = medDist - offset;
-    bigDist = medDist + offset;
-    points.push_back(ray + ray.unitDir * lilDist);
-    points.push_back(ray + ray.unitDir * bigDist);
-    
-    return points;
-}
-
-/* std::vector<Matrix3D> intersects(Plane plane, Ray ray) {    // Unit test this function
-    
-} */
-
-/* std::vector<Matrix3D> intersects(Shape3D shape, Ray ray) {     // Unit test this function
-    std::cout << "I don't recognize that shape. Couldn't find an intersection if I tried." << std::endl;
-    std::vector<Matrix3D> emptyVec;
-    return emptyVec;
-} */
-
-void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> shapes /* std::vector<Shape3D> shapes */) {
+void traceRays(Light light, int picHeight, int picWidth, std::vector<Shape3D> shapes /* std::vector<Shape3D> shapes */) {
     // Declare 2D vect of pixels/colors
     std::vector<std::vector<Color> > px;
 
@@ -326,6 +266,8 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
     Matrix3D center = Matrix3D(500, 400, 0);
     Plane pic = Plane(Ray(center, nonInitPt), center, picHeight, picWidth);
 
+    /* Iterate over every pixel in the image, setting its color based on both the intrinsic properties of the shape
+        and the lighting. */
     for(int y = 0; y < picHeight; y++) {
         std::vector<Color> row;
         px.push_back(row);
@@ -338,10 +280,10 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
             Matrix3D nearestPt = Matrix3D(-1, -1, -1);
             Shape3D nearestShape;
             Matrix3D normalDir;
-            for(Sphere s : shapes) {
-                if(!intersects(s, cam).empty()) { // Could do without this if, after some changes below
-                    minDist = cam.distanceTo(intersects(s, cam)[0]);
-                    for(Matrix3D m : intersects(s, cam)) {
+            for(Shape3D s : shapes) {
+                if(!s.intersects(cam).empty()) { // Could do without this if, after some changes below
+                    minDist = cam.distanceTo(s.intersects(cam)[0]);
+                    for(Matrix3D m : s.intersects(cam)) {
                         minDist = std::min(minDist, cam.distanceTo(m));
                         if(minDist == cam.distanceTo(m)) {
                             nearestPt = m;
@@ -353,9 +295,18 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
             }
             Ray extendedLight = Ray(Matrix3D(light.x, light.y, light.z), nearestPt);
             Matrix3D lightDir = extendedLight.unitDir;
+            /* Get the angle between the direction of the light that reaches this point and the direction of the normal 
+                vector to the shape at this point on its surface. That will determine the brightness of this point. */
             double angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
+            // The smaller the angle, the brighter the shape's surface at this point.
             double brightness = 1 - angle / 1.5708;
             Color clr;
+            /* If the angle between the light and the normal at this point is greater than 1.5708 radians, it is greater 
+                than 90 degrees. That means this point is all the way on the other side of the shape, relative to the point 
+                at which the light strikes it. So no light reaches this point. It will thus be fully shaded (black). 
+                Otherwise, light reaches the point. So the color of the shape becomes the color of this pixel, but the 
+                darkness or lightness of the pixel's color is determined by multiplying each RGB component of the shape's 
+                intrinsic color by the brightness factor calculated above. */
             if(angle > 1.5708) {
                 clr = Color(0, 0, 0, 1);
                 px[y].push_back(clr);
@@ -379,8 +330,8 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
             else {
                 Ray shadow = Ray(nearestPt, light);
                 bool shaded = false;
-                for(Sphere s : shapes) {
-                    if(!intersects(s, shadow).empty()) {
+                for(Shape3D s : shapes) {
+                    if(!s.intersects(shadow).empty()) {
                         shaded = true;
                         break;
                     }
@@ -426,9 +377,8 @@ void inputLight(Light& light) {
     }
 }
 
-std::vector<Sphere> inputShapes() {
-    // std::vector<Shape3D> shapes;
-    std::vector<Sphere> shapes;
+std::vector<Shape3D> inputShapes() {
+    std::vector<Shape3D> shapes;
 
     std::cout << "\nWhat type of shape would you like to add to the scene? (Options: sphere) ";
     std::string ans = "";
@@ -496,9 +446,8 @@ int main() {
 
     Color lightClr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
     Light light = Light(x1Distro(re), y1Distro(re), -zDistro(re), lightClr);
-    // light.x = -100, light.y = -30, light.z = -10; // This is a pretty nice place to put light by default
-    // std::vector<Shape3D> shapes;
-    std::vector<Sphere> shapes;
+
+    std::vector<Shape3D> shapes;
     int picHeight = 500, picWidth = 700;
     char ans = ' ';
 
