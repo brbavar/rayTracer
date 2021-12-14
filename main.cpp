@@ -322,8 +322,8 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
     // Declare 2D vect of pixels/colors
     std::vector<std::vector<Color> > px;
 
-    Matrix3D nonInitPt = Matrix3D(450, 350, 20);
-    Matrix3D center = Matrix3D(450, 350, 0);
+    Matrix3D nonInitPt = Matrix3D(500, 400, 20);
+    Matrix3D center = Matrix3D(500, 400, 0);
     Plane pic = Plane(Ray(center, nonInitPt), center, picHeight, picWidth);
 
     for(int y = 0; y < picHeight; y++) {
@@ -331,8 +331,7 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
         px.push_back(row);
         for(int x = 0; x < picWidth; x++) {
             // Point camera at current pixel
-            Camera cam = Camera(Ray(Matrix3D(450, 350, -1500), Matrix3D(100.5 + x, 100.5 + y, 0)));
-            light.x = -100, light.y = -30, light.z = -10;
+            Camera cam = Camera(Ray(Matrix3D(500, 400, -1500), Matrix3D(150.5 + x, 150.5 + y, 0)));
 
             std::vector<Matrix3D> points;
             double minDist;
@@ -364,9 +363,9 @@ void traceRays(Light light, int picHeight, int picWidth, std::vector<Sphere> sha
                 continue;
             }
             else {
-                nearestShape.clr.blue = 0;
-                nearestShape.clr.green = 0;
-                nearestShape.clr.red = brightness;
+                nearestShape.clr.blue *= brightness;
+                nearestShape.clr.green *= brightness;
+                nearestShape.clr.red *= brightness;
             }
 
             bool shaded = false;
@@ -480,15 +479,24 @@ std::vector<Sphere> inputShapes() {
 int main() {
     unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
     std::default_random_engine re(seed);
-    std::uniform_int_distribution<int> shapeCountDistro(1, 10);
-    std::uniform_real_distribution<double> xDistro(1, 899);
-    std::uniform_real_distribution<double> yDistro(1, 699);
+    
+    std::uniform_real_distribution<double> x1Distro(-949, 949);
+    std::uniform_real_distribution<double> y1Distro(-749, 749);
+    
+    std::uniform_real_distribution<double> x2Distro(1, 949);
+    std::uniform_real_distribution<double> y2Distro(1, 749);
+    
     std::uniform_real_distribution<double> zDistro(1, 10);
-    std::normal_distribution<double> radDistro(100, 20);
+    
+    std::normal_distribution<double> radDistro(150, 90);
+    
     std::uniform_real_distribution<double> clrDistro(0, 1);
+    
+    std::uniform_int_distribution<int> shapeCountDistro(1, 10);
 
     Color lightClr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
-    Light light = Light(xDistro(re), yDistro(re), zDistro(re), lightClr);
+    Light light = Light(x1Distro(re), y1Distro(re), -zDistro(re), lightClr);
+    // light.x = -100, light.y = -30, light.z = -10; // This is a pretty nice place to put light by default
     // std::vector<Shape3D> shapes;
     std::vector<Sphere> shapes;
     int picHeight = 500, picWidth = 700;
@@ -512,7 +520,7 @@ int main() {
         std::cout << std::endl;
 
         for(int i = 0; i < shapeCount; i++) {
-            Matrix3D center = Matrix3D(xDistro(re), yDistro(re), zDistro(re));
+            Matrix3D center = Matrix3D(x2Distro(re), y2Distro(re), zDistro(re));
             double radius = radDistro(re);
             Color clr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
 
@@ -524,6 +532,8 @@ int main() {
             std::cout << std::endl;
         }
     }
+
+    std::cout << "Light is at (" << light.x << ", " << light.y << ", " << light.z << ")." << std::endl;
 
     traceRays(light, picHeight, picWidth, shapes);
 }
