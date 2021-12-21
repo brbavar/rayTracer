@@ -56,6 +56,20 @@ Matrix::Matrix(double x, double y, double z) {
 
 Matrix::~Matrix() {}
 
+/* Returns -1 if either matrix has more than one row of entries, in which case one of them 
+   cannot be said to represent a point in n-dimensional space. They must both be capable of 
+   representing points in space, so that a distance between the points may be calculated. 
+   Of course, there is no such thing as a negative distance. */
+/* double Matrix::distanceTo(Matrix other) {
+    if(entries.size() == 1 && other.entries.size() == 1) {
+        double sumSqrs = 0;
+        for(int c = 0; c < entries[0].size(); c++)
+            sumSqrs += pow(other.entries[0][c] - entries[0][c], 2);
+        return sqrt(sumSqrs);
+    }
+    return -1;
+} */
+
 /* Returns -1 if matrix does not have exactly one row of entries, in which case it cannot
    be said to represent a vector (i.e., list of numbers rather than a table of numbers), 
    which has a magnitude. Of course, there is no such thing as a negative magnitude. */
@@ -149,6 +163,30 @@ Matrix Matrix::operator*(double scalar) {
     }
     return result;
 }
+
+/* Call this matrix A and the other matrix B. In order to be multiplied, A must have exactly as
+   many columns as B does rows. If this condition is unsatisfied, an empty matrix is returned. 
+   Multiplying A and B gives us AB, which has exactly as many rows as A and exactly as many 
+   columns as B. */
+/* Matrix Matrix::operator*(Matrix other) {
+    Matrix result = Matrix();
+    if(entries[0].size() == other.entries.size()) {
+        // Make room in AB for exactly as many rows as A has.
+        result.entries.reserve(entries.size()); */
+
+        /* Give every row in AB exactly as many entries as there are columns in B. 
+        That way, AB will have exactly as many columns as B. */
+/*        std::vector<double> row(other.entries[0].size(), 0);
+
+        for(int r = 0; r < entries.size(); r++) {
+            result.entries.push_back(row);
+            for(int c = 0; c < result.entries[r].size(); c++)
+                for(int n = 0; n < entries[0].size(); n++)
+                    result.entries[r][c] += entries[r][n] * other.entries[n][c];
+        }
+    }
+    return result;
+} */
 
 /* Returns an empty matrix if the matrices being added do not meet the requirement of having 
    equal numbers of rows and columns */
@@ -358,8 +396,10 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
     imgFile.write(header, 14);
     imgFile.write(dibHeader, 40);
 
+    // std::vector<double> pxVec{0,0,0};
     char pixel[] = {0,0,0};
 
+    // int numSamples = 1;
     unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
     std::default_random_engine re(seed);
     std::uniform_real_distribution<double> sampleDistro(0, 0.999999999999999);
@@ -368,7 +408,11 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
        and the lighting. */
     for(double z = -picHeight / 2; z < picHeight / 2; z++)
         for(double x = -picWidth / 2; x < picWidth / 2; x++) {
-            auto cam = std::make_tuple(Matrix(0, 0, 0), Matrix(x, -200, z));  // Point camera at current pixel sample
+            Matrix pxSample = Matrix(x, -200, z);
+            int i = 0;
+            // while(i < numSamples) {
+                // pxSample = pxSample + Matrix(sampleDistro(re), 0, sampleDistro(re));
+            auto cam = std::make_tuple(Matrix(0, 0, 0), pxSample);  // Point camera at current pixel sample
             const double INF = std::numeric_limits<double>::infinity();
             double minDist = INF, dist;
             std::string type = "";
@@ -415,12 +459,33 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
                 if(smallAngle /* && unshaded */) {
                     for(int i = 0; i < 3; i++) {
                         pixel[i] = floor(clr.entries[0][i] * 255);
+                        // pxVec[i] += clr.entries[0][i];
+                        // std::cout << pxVec[i] << " ";
                     }
                     imgFile.write(pixel, 3);
+                    // std::cout << std::endl;
+                    // if(++i < numSamples)
                     continue;
                 }
+                // }
+                // i++;
             }
+            /* for(int j = 0; j < 3; j++) {
+                // std::cout << std::endl;
+                // std::cout << "j = " << j << ", ";
+                // std::cout << "pixel[j] before = " << pixel[j] - '0' + '0' << ", ";
+                if(pxVec[j] / 5 > 0.999999999999999)
+                    pixel[j] = floor(2 * (pxVec[j] * 255 / 5) - 0.999999999999999);
+                else {
+                    pixel[j] = floor(pxVec[j] * 255 / 5);
+                }
+                // std::cout << "pixel[j] after = " << pixel[j] - '0' + '0' << std::endl;
+            } */
+            /* for(int j = 0; j < 3; j++)
+                pixel[j] = floor(pxVec[j] * 255); */
             imgFile.write(pixel, 3);
+            // std::cout << "pixel " << (z * picHeight + x + 1) << "written" << std::endl;
+            // std::fill(pxVec.begin(), pxVec.end(), 0);
             for(int j = 0; j < 3; j++)
                 pixel[j] = 0;
         }
