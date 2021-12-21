@@ -1,39 +1,53 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#include "color.h"
+#include <vector>
+// #include "color.h"
 
-struct Matrix3D {
-    double x, y, z;
+struct Matrix {
+    std::vector<std::vector<double> > entries;
 
-    Matrix3D();
-    Matrix3D(const Matrix3D&);
-    Matrix3D(double, double, double);
+    Matrix();
+    Matrix(const Matrix&);
+    Matrix(std::vector<std::vector<double> >);  // Constructs matrices of arbitrary height and width
+    Matrix(double, double);  // Constructs 2D matrices
+    Matrix(double, double, double);  // Constructs 3D matrices
+    ~Matrix();
 
-    double distanceTo(Matrix3D);
+    /* Returns distance between point at coordinates in this->entries 
+       and point at coords in member vector, entries, of matrix argument */
+    double distanceTo(Matrix);
 
     // Returns magnitude of vector represented by matrix
     double mag();
 
+    Matrix normalize();
+
+    bool rowsColsEq(Matrix);
+
     // Returns dot product of this vector with another
-    double dot(Matrix3D);
+    double dot(Matrix);
 
-    // * serves as both scalar multiplication and cross product operator
-    Matrix3D operator*(double);
-    Matrix3D operator*(Matrix3D);
-    Matrix3D operator+(Matrix3D);
-    Matrix3D operator-(Matrix3D);
+    // Returns cross product of this vector with another
+    Matrix cross(Matrix);
 
-    Matrix3D normalize();
+    Matrix negate();
 
-    Matrix3D invert();
+    // * overloaded for both scalar and matrix multiplication
+    Matrix operator*(double);
+    Matrix operator*(Matrix);
+    Matrix operator+(Matrix);
+    Matrix operator-(Matrix);
+    bool operator==(Matrix);
+    bool operator!=(Matrix);
+    void operator=(const Matrix&);
 };
 
-struct Light : Matrix3D {
+/* struct Light : Matrix {
     Color clr;
 
     Light();
     Light(double, double, double, Color);
-};
+}; */
 
 #endif

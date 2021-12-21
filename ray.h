@@ -3,14 +3,21 @@
 
 #include "matrix.h"
 
-struct Ray : Matrix3D {
-    Matrix3D unitDir;
-    
+struct Ray : Matrix {
+    Matrix unitDir;
+
     Ray();
-    Ray(Matrix3D, Matrix3D);
+    Ray(Matrix, Matrix);
+
+    bool operator==(Ray);
+    bool operator!=(Ray);
 };
 
 struct Camera : Ray {
+    double picDist = 1;
+    Matrix right;
+    Matrix focus;
+
     Camera();
     Camera(Ray);
 };

@@ -8,9 +8,24 @@
 
 
 Matrix::Matrix() {
+    // entries.reserve(1);
 }
 
 Matrix::Matrix(const Matrix& orig) {
+    std::cout << "begin Matrix copy" << std::endl;
+
+    /* std::vector<double> list;
+    entries.reserve(orig.entries.size());
+    list.reserve(orig.entries[0].size());
+    for(auto row : orig.entries) {
+        for(double entry : row)
+            list.push_back(entry);
+        entries.push_back(list);
+        list.clear();
+    }
+        
+    memcpy(entries.data(), orig.entries.data(), sizeof orig.entries); */
+    
     std::vector<double> list;
     entries.reserve(orig.entries.size());
     list.reserve(orig.entries[0].size()); 
@@ -21,9 +36,17 @@ Matrix::Matrix(const Matrix& orig) {
         entries.push_back(list);
         list.clear();
     }
+
+    for(auto row : entries)
+        for(double entry : row)
+            std::cout << entry << " ";
+
+    std::cout << "\nend Matrix copy" << std::endl;
 }
 
 Matrix::Matrix(std::vector<std::vector<double> > items) {
+    std::cout << "begin Matrix" << std::endl;
+
     std::vector<double> list;
     entries.reserve(items.size());
     list.reserve(items[0].size());
@@ -33,6 +56,12 @@ Matrix::Matrix(std::vector<std::vector<double> > items) {
         entries.push_back(list);
         list.clear();
     }
+
+    for(auto row : entries)
+        for(double entry : row)
+            std::cout << entry << " ";
+
+    std::cout << "\nend Matrix" << std::endl;
 }
 
 Matrix::Matrix(double x, double y) {
@@ -45,6 +74,8 @@ Matrix::Matrix(double x, double y) {
 }
 
 Matrix::Matrix(double x, double y, double z) {
+    std::cout << "begin Matrix" << std::endl;
+
     entries.reserve(1);
     std::vector<double> coords;
     coords.reserve(3);
@@ -52,9 +83,17 @@ Matrix::Matrix(double x, double y, double z) {
     coords.push_back(y);
     coords.push_back(z);
     entries.push_back(coords);
+
+    for(auto row : entries)
+        for(double entry : row)
+            std::cout << entry << " ";
+
+    std::cout << "\nend Matrix" << std::endl;
 }
 
-Matrix::~Matrix() {}
+Matrix::~Matrix() {
+    std::cout << "destroy Matrix" << std::endl;
+}
 
 /* Returns -1 if either matrix has more than one row of entries, in which case one of them 
    cannot be said to represent a point in n-dimensional space. They must both be capable of 
@@ -139,15 +178,20 @@ Matrix Matrix::cross(Matrix other) {
 }
 
 Matrix Matrix::negate() {
+    std::cout << "NEGATE" << std::endl;
     Matrix result = Matrix();
+    std::cout << "POINT A--" << std::endl;
     std::vector<double> list;
+    std::cout << "POINT A-" << std::endl;
     list.reserve(entries[0].size());
+    std::cout << "POINT A" << std::endl;
     for(auto row : entries) {
         for(double entry : row)
             list.push_back(-entry);
         result.entries.push_back(list);
         list.clear();
     }
+    std::cout << "POINT B" << std::endl;
     return result;
 }
 
@@ -191,6 +235,7 @@ Matrix Matrix::operator*(Matrix other) {
 /* Returns an empty matrix if the matrices being added do not meet the requirement of having 
    equal numbers of rows and columns */
 Matrix Matrix::operator+(Matrix other) {
+    std::cout << "PLUS" << std::endl;
     Matrix result = Matrix();
     if(rowsColsEq(other)) {
         std::vector<double> list;
@@ -206,6 +251,7 @@ Matrix Matrix::operator+(Matrix other) {
 }
 
 Matrix Matrix::operator-(Matrix other) {
+    std::cout << "MINUS" << std::endl;
     return *this + other.negate();
 }
 
@@ -239,19 +285,19 @@ void Matrix::operator=(const Matrix& orig) {
 }
 
 
-void inputPicProps(int&, int&);
+void inputPicProps(int&, int&);  //DONE
 
 double intersect(std::tuple<Matrix,Matrix>, 
-    std::tuple<std::string,Matrix,Matrix,std::pair<Matrix,Matrix>,std::vector<double> >);
+    std::tuple<std::string,Matrix,Matrix,std::pair<Matrix,Matrix>,std::vector<double> >); //DONE
 
-double findBrightness(std::pair<Matrix,Matrix>, Matrix, Matrix, char*, Matrix&);
+double findBrightness(std::pair<Matrix,Matrix>, Matrix, Matrix, char*, Matrix&); //DONE
 
 void render(std::pair<Matrix,Matrix>, int, int, 
     std::vector<std::tuple<std::string,Matrix,Matrix,std::pair<Matrix,Matrix>,std::vector<double> >>);
 
-void inputLight(std::pair<Matrix,Matrix>&);
+void inputLight(std::pair<Matrix,Matrix>&);  //DONE
 
-auto inputShapes();
+auto inputShapes();  //DONE
 
 
 void inputPicProps(int& picHeight, int& picWidth) {
@@ -291,6 +337,7 @@ void inputPicProps(int& picHeight, int& picWidth) {
 double intersect(std::tuple<Matrix,Matrix> ray, 
     std::tuple<std::string,Matrix,Matrix,std::pair<Matrix,Matrix>,std::vector<double> > shape) {
     Matrix rayOrig = std::get<0>(ray);  // Origin, or initial point, of ray
+    std::cout << "INTERSECT" << std::endl;
     Matrix rayDir = (std::get<1>(ray) - rayOrig).normalize();  // Normalized direction of ray
     std::string type = std::get<0>(shape);
     Matrix center = std::get<1>(shape);
@@ -420,12 +467,16 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
                 auto nearestShape = std::make_tuple(type, Matrix(0,0,0), Matrix(0,0,0), normal, dimensions);
 
                 for(auto s : shapes) {
+                    std::cout << "DIST = " << dist << std::endl;
                     dist = intersect(cam, s);
                     if(dist != -1) {
                         minDist = std::min(minDist, dist);
-                        if(minDist == dist)
-                            nearestShape = s;
+                        if(minDist == dist) {
+                            std::cout << "just before swap" << std::endl;
+                            nearestShape.swap(s);
+                        }
                     }
+                    std::cout << "ITERATION OVER" << std::endl;
                 }
 
                 /* If minDist is less than infinity, the color of the pixel will depend on whether light reaches the shape at the point of 
@@ -651,6 +702,9 @@ int main() {
             
             auto shape = std::make_tuple("Sphere", center, clr, normal, dimensions);
             shapes.push_back(shape);
+            /* std::cout << "just before emplace_back" << std::endl;
+            shapes.emplace_back(center, 280, clr);
+            std::cout << "just after emplace_back" << std::endl; */
         }
 
         std::cout << (onFloor ? "Shapes are on floor." : "Shapes are free-floating.") << std::endl;

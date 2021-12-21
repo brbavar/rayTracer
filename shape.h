@@ -4,27 +4,36 @@
 #include <string>
 #include "ray.h"
 
-struct Shape3D {
-    Matrix3D center;
-    double radius, height, width;
-    Ray normal;
-    Color clr;
+struct Shape {
     std::string type = "";
+    Matrix locCenter;
+    Matrix globCenter;
+    Color clr;
+    Ray normal;
+    double locRadius = 1, locHeight, locWidth;
+    double globRadius, globHeight, globWidth;
 
-    Shape3D();
-    Shape3D(Color);
+    Shape();
+    Shape(const Shape&);
+    Shape(Color);
+    Shape(Matrix c, double r, Color color); // Sphere
 
-    std::vector<Matrix3D> intersects(Ray);
+    double intersects(Ray);
+    
+    bool operator==(Shape);
+    bool operator!=(Shape);
+    void operator=(const Shape&);
 };
 
-struct Sphere : Shape3D {
+struct Sphere : Shape {
     Sphere();
-    Sphere(Matrix3D, double, Color);
+    Sphere(Matrix, double, Color);
 };
 
-struct Plane : Shape3D {
+struct Plane : Shape {
     Plane();
-    Plane(Ray, Matrix3D, double, double);
+    Plane(Ray, Matrix, double, double);
+    Plane(Ray, Matrix, double, double, Color);
 };
 
 #endif
