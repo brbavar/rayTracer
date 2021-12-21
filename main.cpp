@@ -244,7 +244,7 @@ void inputPicProps(int&, int&);
 double intersect(std::tuple<Matrix,Matrix>, 
     std::tuple<std::string,Matrix,Matrix,std::pair<Matrix,Matrix>,std::vector<double> >);
 
-double findBrightness(std::pair<Matrix,Matrix>, Matrix, Matrix, char*, Matrix&);
+double setBrightness(std::pair<Matrix,Matrix>, Matrix, Matrix, char*, Matrix&);
 
 void render(std::pair<Matrix,Matrix>, int, int, 
     std::vector<std::tuple<std::string,Matrix,Matrix,std::pair<Matrix,Matrix>,std::vector<double> >>);
@@ -319,7 +319,7 @@ double intersect(std::tuple<Matrix,Matrix> ray,
     return -1;
 }
 
-double findBrightness(std::pair<Matrix,Matrix> light, Matrix nearestPt, Matrix normalDir, char* pixel, Matrix& clr) {
+double setBrightness(std::pair<Matrix,Matrix> light, Matrix nearestPt, Matrix normalDir, char* pixel, Matrix& clr) {
     // Get direction of light beam aimed at nearest point of intersection.
     Matrix lightDir = (nearestPt - light.first).normalize();
 
@@ -396,10 +396,10 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
     imgFile.write(header, 14);
     imgFile.write(dibHeader, 40);
 
-    char pixel[] = {0, 0, 0};
+    std::vector<double> pxVec{0,0,0};
+    char pixel[] = {0,0,0};
 
-    Matrix pxSample = Matrix(-picHeight / 2, -100, -picWidth / 2);
-    int numSamples = 80;
+    int numSamples = 1;
     unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
     std::default_random_engine re(seed);
     std::uniform_real_distribution<double> sampleDistro(0, 0.999999999999999);
@@ -408,10 +408,11 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
        and the lighting. */
     for(double z = -picHeight / 2; z < picHeight / 2; z++)
         for(double x = -picWidth / 2; x < picWidth / 2; x++) {
+            Matrix pxSample = Matrix(x, -200, z);
             int i = 0;
             while(i < numSamples) {
-                pxSample = pxSample + Matrix(sampleDistro(re), 0, sampleDistro(re));
-                auto cam = std::make_tuple(Matrix(0, 0, 0), pxSample);  // Point camera at current pixel
+                // pxSample = pxSample + Matrix(sampleDistro(re), 0, sampleDistro(re));
+                auto cam = std::make_tuple(Matrix(0, 0, 0), pxSample);  // Point camera at current pixel sample
                 const double INF = std::numeric_limits<double>::infinity();
                 double minDist = INF, dist;
                 std::string type = "";
@@ -439,7 +440,7 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
                     Matrix normalDir = (nearestPt - std::get<1>(nearestShape)).normalize();
                     
                     Matrix clr = std::get<2>(nearestShape);
-                    double brightness = findBrightness(light, nearestPt, normalDir, pixel, clr);
+                    double brightness = setBrightness(light, nearestPt, normalDir, pixel, clr);
                     bool smallAngle = brightness > 0, unshaded = true;
 
                     /* Cast a ray from the nearest point of intersection to the light source to see if any other shape
@@ -456,25 +457,33 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
                     /* If angle is small enough for light to reach intersection point, and no shape casts shadow over that point, 
                     then give pixel same color as shape. */
                     if(smallAngle /* && unshaded */) {
-                        for(int i = 0; i < 3; i++)
-                            pixel[i] += floor(clr.entries[0][i]);
-                        continue;
+                        for(int i = 0; i < 3; i++) {
+                            pxVec[i] += clr.entries[0][i];
+                            // std::cout << pxVec[i] << " ";
+                        }
+                        // std::cout << std::endl;
+                        if(++i < numSamples)
+                            continue;
                     }
                 }
                 i++;
             }
-            for(int j = 0; j < 3; j++) {
-                /* std::cout << std::endl;
-                std::cout << "j = " << j << ", ";
-                std::cout << "pixel[j] before = " << pixel[j] - '0' + '0' << ", "; */
-                if(floor(pixel[j] * 255 / 5) > 0.999999999999999)
-                    pixel[j] = 2 * floor(pixel[j] * 255 / 5) - 0.999999999999999;
-                else
-                    pixel[j] = floor(pixel[j] * 255 / 5);
+            /* for(int j = 0; j < 3; j++) {
+                // std::cout << std::endl;
+                // std::cout << "j = " << j << ", ";
+                // std::cout << "pixel[j] before = " << pixel[j] - '0' + '0' << ", ";
+                if(pxVec[j] / 5 > 0.999999999999999)
+                    pixel[j] = floor(2 * (pxVec[j] * 255 / 5) - 0.999999999999999);
+                else {
+                    pixel[j] = floor(pxVec[j] * 255 / 5);
+                }
                 // std::cout << "pixel[j] after = " << pixel[j] - '0' + '0' << std::endl;
-            }
+            } */
+            for(int j = 0; j < 3; j++)
+                pixel[j] = floor(pxVec[j] * 255);
             imgFile.write(pixel, 3);
             // std::cout << "pixel " << (z * picHeight + x + 1) << "written" << std::endl;
+            std::fill(pxVec.begin(), pxVec.end(), 0);
             for(int j = 0; j < 3; j++)
                 pixel[j] = 0;
         }
