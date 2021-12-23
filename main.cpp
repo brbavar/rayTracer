@@ -275,8 +275,12 @@ double intersect(std::tuple<Matrix,Matrix> ray,
         }
     }
     if(type == "Plane") {
-        double dist = rayOrig.entries[0][1] / (-rayDir.entries[0][1]);
-        return dist;
+        Matrix normal = std::get<3>(shape).second - std::get<3>(shape).first;
+        Matrix normalDir = normal.normalize();
+        if(rayDir.dot(normalDir) > 0) {
+            double dist = rayOrig.entries[0][1] / (-rayDir.entries[0][1]);
+            return dist;
+        }
     }
     return -1;
 }
@@ -285,9 +289,31 @@ double setBrightness(std::pair<Matrix,Matrix> light, Matrix nearestPt, Matrix no
     // Get direction of light beam aimed at nearest point of intersection.
     Matrix lightDir = (nearestPt - light.first).normalize();
 
+    /* std::cout << "nearestPt.entries" << std::endl;
+    for(auto row : nearestPt.entries)
+        for(double entry : row)
+            std::cout << entry << " ";
+    std::cout << "\nlight.first.entries" << std::endl;
+    for(auto row : light.first.entries)
+        for(double entry : row)
+            std::cout << entry << " ";
+    std::cout << "\nlightDir.entries" << std::endl;
+    for(auto row : lightDir.entries)
+        for(double entry : row)
+            std::cout << entry << " ";
+    std::cout << "\nnormalDir.entries" << std::endl;
+    for(auto row : normalDir.entries)
+        for(double entry : row)
+            std::cout << entry << " "; */
+
+    double brightness = 1, angle;
+
     /* Get the angle between the direction of the light that reaches this point and the direction of the normal 
         vector to the shape at this point on its surface. That will determine the brightness of this point. */
-    double angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
+    if(lightDir.mag() > 0)
+        angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
+    else
+        return brightness;
 
     /* If the angle between the light and the normal at this point is greater than 1.5708 radians, it is greater 
         than 90 degrees. That means this point is all the way on the other side of the shape, relative to the point 
@@ -296,7 +322,7 @@ double setBrightness(std::pair<Matrix,Matrix> light, Matrix nearestPt, Matrix no
         darkness or lightness of the pixel's color is determined by multiplying each RGB component of the shape's 
         intrinsic color by the brightness factor calculated below. The smaller the angle, the brighter the shape's 
         surface at this point. */
-    double brightness = 1 - angle / 1.5708;
+    brightness -= angle / 1.5708;
 
     for(int i = 0; i < 3; i++)
         clr.entries[0][i] *= brightness;
@@ -368,13 +394,13 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
        and the lighting. */
     for(double z = -picHeight / 2; z < picHeight / 2; z++)
         for(double x = -picWidth / 2; x < picWidth / 2; x++) {
-            auto cam = std::make_tuple(Matrix(0, 0, 0), Matrix(x, -200, z));  // Point camera at current pixel sample
+            auto cam = std::make_tuple(Matrix(0, 0, 0), Matrix(x, -100, z));  // Point camera at current pixel sample
             const double INF = std::numeric_limits<double>::infinity();
             double minDist = INF, dist;
             std::string type = "";
-            std::pair<Matrix,Matrix> normal = {Matrix(0,0,0), Matrix(0,0,0)};
+            std::pair<Matrix,Matrix> nrml = {Matrix(0,0,0), Matrix(0,0,0)};
             std::vector<double> dimensions{0};
-            auto nearestShape = std::make_tuple(type, Matrix(0,0,0), Matrix(0,0,0), normal, dimensions);
+            auto nearestShape = std::make_tuple(type, Matrix(0,0,0), Matrix(0,0,0), nrml, dimensions);
 
             for(auto s : shapes) {
                 dist = intersect(cam, s);
@@ -391,9 +417,20 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
             if(minDist < INF) {
                 Matrix camPos = std::get<0>(cam);
                 Matrix camTarg = std::get<1>(cam);
-                Matrix camDir = (camTarg - camPos).normalize();
+                Matrix camRay = camTarg - camPos;
+                Matrix camDir = camRay.normalize();
                 Matrix nearestPt = camPos + camDir * minDist;
-                Matrix normalDir = (nearestPt - std::get<1>(nearestShape)).normalize();
+
+                Matrix center = std::get<1>(nearestShape);
+                Matrix normal;
+                if(std::get<0>(nearestShape) == "Sphere")
+                    normal = nearestPt - center;
+                if(std::get<0>(nearestShape) == "Plane") {
+                    Matrix nrmlTarg = std::get<3>(nearestShape).second;
+                    normal = nrmlTarg - center;
+                }
+                Matrix normalDir = normal.normalize();
+                bool inside = camDir.dot(normal) > 0 ? true : false;  // 
                 
                 Matrix clr = std::get<2>(nearestShape);
                 double brightness = setBrightness(light, nearestPt, normalDir, pixel, clr);
@@ -550,7 +587,7 @@ int main() {
     std::vector<std::tuple<std::string,Matrix,Matrix,std::pair<Matrix,Matrix>,std::vector<double> >> shapes;
     char ans = ' ';
 
-    std::cout << "Would you like to design a custom image, or just generate a random one? (c, r) ";
+    std::cout << "Would you like to design a custom image, or just generate one automatically? (c, r) ";
     std::cin >> ans;
     while(ans != 'c' && ans != 'r') {
         std::cout << "You should answer either 'c' for custom or 'r' for random. ";
@@ -567,25 +604,28 @@ int main() {
     else {
         int shapeCount = 1 /* shapeCountDistro(re) */;
         shapes.reserve(shapeCount);
-        int onFloor = 0 /* floorDistro(re) */;
+        int onFloor = 1 /* floorDistro(re) */;
 
-        /* if(onFloor) {            
-            Matrix center = Matrix(475, 0, 5);
-            Matrix nonInitPt = Matrix(475, 0, 20);
-            std::pair<Matrix,Matrix> normal = std::pair<Matrix,Matrix>(center, nonInitPt);
-            double xDim = 950, zDim = 10;
-            Matrix clr = Matrix(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
-            shapes.push_back(Plane(normal, center, zDim, xDim, clr));
+        if(onFloor) {            
+            Matrix center = Matrix(0,400,280);
+            std::pair<Matrix,Matrix> normal = {center, Matrix(0,400,0)};
+            std::vector<double> dimensions;
+            entries.clear();
+            list.clear();
+            for(int i = 0; i < 4; i++)
+                list.push_back(clrDistro(re));
+            entries.push_back(list);
+            Matrix clr = Matrix(entries);
+            auto plane = std::make_tuple("Plane", center, clr, normal, dimensions);
+            shapes.push_back(plane);
             shapeCount++;
-        } */
+        }
 
         for(int i = 0; i < shapeCount; i++) {
             Matrix center = Matrix(0,400,0);
 
-            std::vector<std::vector<double> > entries;
-            entries.reserve(1);
-            std::vector<double> list;
-            list.reserve(4);
+            entries.clear();
+            list.clear();
             for(int i = 0; i < 4; i++)
                 list.push_back(clrDistro(re));
             entries.push_back(list);
