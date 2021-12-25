@@ -2,6 +2,7 @@
 #define MATRIX_H
 
 #include <vector>
+#include "color.h"
 
 struct Matrix {
     std::vector<std::vector<double> > entries;
@@ -12,6 +13,10 @@ struct Matrix {
     Matrix(double, double);  // Constructs 2D matrices
     Matrix(double, double, double);  // Constructs 3D matrices
     ~Matrix();
+
+    /* Returns distance between point at coordinates in this->entries 
+       and point at coords in member vector, entries, of matrix argument */
+    double distanceTo(Matrix);
 
     // Returns magnitude of vector represented by matrix
     double mag();
@@ -30,11 +35,19 @@ struct Matrix {
 
     // * overloaded for both scalar and matrix multiplication
     Matrix operator*(double);
+    Matrix operator*(Matrix);
     Matrix operator+(Matrix);
     Matrix operator-(Matrix);
     bool operator==(Matrix);
     bool operator!=(Matrix);
     void operator=(const Matrix&);
+};
+
+struct Light : Matrix {
+    Color clr;
+
+    Light();
+    Light(double, double, double, Color);
 };
 
 #endif
