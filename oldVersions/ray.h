@@ -1,7 +1,7 @@
 #ifndef RAY_H
 #define RAY_H
 
-#include "matrix.h"
+#include "oldMatrix.h"
 
 struct Ray : Matrix {
     Matrix unitDir;

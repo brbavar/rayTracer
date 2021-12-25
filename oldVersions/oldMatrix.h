@@ -2,6 +2,7 @@
 #define MATRIX_H
 
 #include <vector>
+#include "color.h"
 
 struct Matrix {
     std::vector<std::vector<double> > entries;
@@ -40,6 +41,13 @@ struct Matrix {
     bool operator==(Matrix);
     bool operator!=(Matrix);
     void operator=(const Matrix&);
+};
+
+struct Light : Matrix {
+    Color clr;
+
+    Light();
+    Light(double, double, double, Color);
 };
 
 #endif

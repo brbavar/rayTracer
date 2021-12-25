@@ -6,12 +6,10 @@
 
 struct Shape {
     std::string type = "";
-    Matrix locCenter;
-    Matrix globCenter;
+    Matrix center;
     Color clr;
     Ray normal;
-    double locRadius = 1, locHeight, locWidth;
-    double globRadius, globHeight, globWidth;
+    double radius, height, width;
 
     Shape();
     Shape(const Shape&);
