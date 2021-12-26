@@ -415,9 +415,8 @@ void render(std::pair<Matrix,Matrix> light, int picHeight, int picWidth,
                 Matrix normal;
                 if(type == "Sphere")
                     normal = nearestPt - center;
-                if(type == "Plane") {
+                if(type == "Plane")
                     normal = nearestPt + Matrix(0,0,1);
-                }
                 Matrix normalDir = normal.normalize();
                 bool inside = camDir.dot(normal) > 0 ? true : false;  // 
                 
@@ -541,7 +540,7 @@ auto inputShapes() {
     return shapes;
 }
 
-/* fresnelize() {
+/* refract() {
 
 } */
 

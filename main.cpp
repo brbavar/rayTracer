@@ -329,14 +329,32 @@ Shape::Shape(const Shape& orig) {
     }
 }
 
-Shape::Shape(Color color) {
+/* Shape::Shape(Color color) {
     clr = color;
-}
+} */
 
 Shape::Shape(Matrix c, double r, Color color) {
     center = c, radius = r;
     clr = color, type = "Sphere";
 }
+
+Shape::Shape(Ray r, Matrix c /* , double h, double w */) {
+    normal = r, center = c /*, height = h, width = w */;
+    // double aspectRatio = w / h;
+    // locHeight = (w > h ? 1 / aspectRatio : 1);
+    // locWidth = (w > h ? 1 : aspectRatio);
+    type = "Plane";
+}
+
+Shape::Shape(Ray r, Matrix c, /* double h, double w, */ Color color) {
+    normal = r, center = c /* , height = h, width = w */;
+    // double aspectRatio = w / h;
+    // locHeight = (w > h ? 1 / aspectRatio : 1);
+    // locWidth = (w > h ? 1 : aspectRatio);
+    clr = color, type = "Plane";
+}
+
+Shape::~Shape() {}
 
 double Shape::intersects(Ray ray) {
     if(type == "Sphere") {
@@ -355,8 +373,10 @@ double Shape::intersects(Ray ray) {
         }
     }
     if(type == "Plane") {
-        double dist = ray.entries[0][1] / (-ray.unitDir.entries[0][1]);
-        return dist;
+        if(ray.unitDir.dot(normal.normalize()) < 0) {
+            double dist = ray.entries[0][1] / (-ray.unitDir.entries[0][1]);
+            return dist;
+        }
     }
     return -1;
 }
@@ -395,8 +415,13 @@ void Shape::operator=(const Shape& orig) {
     }
 }
 
-Sphere::Sphere() {
+/* Sphere::Sphere() {
     type = "Sphere";
+}
+
+Sphere::Sphere(const Sphere& orig) {
+    center = orig.center, radius = orig.radius;
+    clr = orig.clr, type = orig.type;
 }
 
 Sphere::Sphere(Matrix c, double r, Color color) {
@@ -404,29 +429,40 @@ Sphere::Sphere(Matrix c, double r, Color color) {
     clr = color, type = "Sphere";
 }
 
+Sphere::~Sphere() {}
+
 Plane::Plane() {
     type = "Plane";
 }
 
+Plane::Plane(const Plane& orig) {
+    center = orig.center, radius = orig.radius;
+    clr = orig.clr, type = orig.type;
+    height = orig.height, width = orig.width;
+    normal = orig.normal;
+}
+
 Plane::Plane(Ray r, Matrix c, double h, double w) {
     normal = r, center = c, height = h, width = w;
-    /* double aspectRatio = w / h;
-    locHeight = (w > h ? 1 / aspectRatio : 1);
-    locWidth = (w > h ? 1 : aspectRatio); */
+    // double aspectRatio = w / h;
+    // locHeight = (w > h ? 1 / aspectRatio : 1);
+    // locWidth = (w > h ? 1 : aspectRatio);
     type = "Plane";
 }
 
 Plane::Plane(Ray r, Matrix c, double h, double w, Color color) {
     normal = r, center = c, height = h, width = w;
-    /* double aspectRatio = w / h;
-    locHeight = (w > h ? 1 / aspectRatio : 1);
-    locWidth = (w > h ? 1 : aspectRatio); */
+    // double aspectRatio = w / h;
+    // locHeight = (w > h ? 1 / aspectRatio : 1);
+    // locWidth = (w > h ? 1 : aspectRatio);
     clr = color, type = "Plane";
 }
 
+Plane::~Plane() {} */
+
 
 void inputPicProps(int&, int&);
-double setBrightness(Light, Matrix, Matrix, char*, Color&);
+double setBrightness(std::string, Light, Matrix, Matrix, char*, Color&);
 void render(Light, int, int, std::vector<Shape*>);
 void inputLight(Light&);
 std::vector<Shape*> inputShapes();
@@ -466,29 +502,42 @@ void inputPicProps(int& picHeight, int& picWidth) {
     }
 }
 
-double setBrightness(Light light, Matrix nearestPt, Matrix normalDir, char* pixel, Color& clr) {
-    Ray extendedLight = Ray(Matrix(light.entries), nearestPt);
-    Matrix lightDir = extendedLight.unitDir;
+double setBrightness(std::string type, Light light, Matrix nearestPt, Matrix normalDir, char* pixel, Color& clr) {
+    double brightness = 1, angle;
 
-    /* Get the angle between the direction of the light that reaches this point and the direction of the normal 
-        vector to the shape at this point on its surface. That will determine the brightness of this point. */
-    double angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
+    if(type == "Sphere") {
+        Ray extendedLight = Ray(Matrix(light.entries), nearestPt);
 
-    /* If the angle between the light and the normal at this point is greater than 1.5708 radians, it is greater 
-        than 90 degrees. That means this point is all the way on the other side of the shape, relative to the point 
-        at which the light strikes it. So no light reaches this point. It will thus be fully shaded (black). 
-        Otherwise, light reaches the point. So the color of the shape becomes the color of this pixel; the 
-        darkness or lightness of the pixel's color is determined by multiplying each RGB component of the shape's 
-        intrinsic color by the brightness factor calculated below. The smaller the angle, the brighter the shape's 
-        surface at this point. */
-    double brightness = 1 - angle / 1.5708;
+        // Get direction of light beam aimed at point of intersection.
+        Matrix lightDir = extendedLight.unitDir;
+
+        /* Get the angle between the direction of the light that reaches this point and the direction of the normal 
+            vector to the shape at this point on its surface. That will determine the brightness of this point. */
+        if(lightDir.mag() > 0)
+            angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
+        else
+            return brightness;
+
+        /* If the angle between the light and the normal at this point is greater than 1.5708 radians, it is greater 
+            than 90 degrees. That means this point is all the way on the other side of the shape, relative to the point 
+            at which the light strikes it. So no light reaches this point. It will thus be fully shaded (black). 
+            Otherwise, light reaches the point. So the color of the shape becomes the color of this pixel; the 
+            darkness or lightness of the pixel's color is determined by multiplying each RGB component of the shape's 
+            intrinsic color by the brightness factor calculated below. The smaller the angle, the brighter the shape's 
+            surface at this point. */
+        brightness -= angle / 1.5708;
+    }
+    if(type == "Plane") {
+        double dist = (nearestPt - light).mag();
+        brightness /= dist;
+    }
 
     clr.blue *= brightness;
     clr.green *= brightness;
     clr.red *= brightness;
 
     return brightness;
- }
+}
 
 void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes) {
     int area = picWidth * picHeight;
@@ -553,13 +602,13 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
        and the lighting. */
     for(double z = -picHeight / 2; z < picHeight / 2; z++)
         for(double x = -picWidth / 2; x < picWidth / 2; x++) {
-            Ray cam = Ray(Matrix(0, 0, 0), Matrix(x, -100, z));  // Point camera at current pixel sample
-
+            Ray cam = Ray(Matrix(0, -10, 0), Matrix(x, -110, z));  // Point camera at current pixel sample
+            
             const double INF = std::numeric_limits<double>::infinity();
             double minDist = INF, dist;
             Shape nearestShape;
 
-            for(auto s : shapes) {
+            for(Shape* s : shapes) {
                 dist = (*s).intersects(cam);
                 if(dist != -1) {
                     minDist = std::min(minDist, dist);
@@ -579,21 +628,20 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
 
                 if(type == "Sphere")
                     normal = nearestPt - center;
-                if(type == "Plane") {
+                if(type == "Plane")
                     normal = nearestPt + Matrix(0,0,1);
-                }
 
                 Matrix normalDir = normal.normalize();
-                // bool inside = camDir.dot(normal) > 0 ? true : false;
-                
+                // bool inside = camDir.dot(normal) > 0 ? true : false; //
+
                 Color clr = nearestShape.clr;
-                double brightness = setBrightness(light, nearestPt, normalDir, pixel, clr);
+                double brightness = setBrightness(type, light, nearestPt, normalDir, pixel, clr);
                 bool smallAngle = brightness > 0, unshaded = true;
 
                 /* Cast a ray from the nearest point of intersection to the light source to see if any other shape
                 is in the way, preventing the light from reaching said point. */
                 /* Ray shadow = Ray(nearestPt, light);
-                for(auto s : shapes) {
+                for(Shape* s : shapes) {
                     if(*s != nearestShape) {
                         dist = (*s).intersects(shadow);
                         if(dist != -1)
@@ -604,6 +652,8 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
                 /* If angle is small enough for light to reach intersection point, and no shape casts shadow over that point, 
                 then give pixel same color as shape. */
                 if(smallAngle /* && unshaded */) {
+                    /* if(type == "Plane")
+                        std::cout << "b = " << clr.blue << ", g = " << clr.green << ", r = " << clr.red << std::endl; */
                     pixel[0] = floor(clr.blue * 255);
                     pixel[1] = floor(clr.green * 255);
                     pixel[2] = floor(clr.red * 255);
@@ -683,7 +733,7 @@ std::vector<Shape*> inputShapes() {
             std::cin >> clr.opacity;
             clr.opacity = (10 - clr.opacity) / 10;
 
-            Shape* ptr = new Sphere(c, r, clr);
+            Shape* ptr = new Shape(c, r, clr);
             shapes.push_back(ptr);
         }
         else {
@@ -695,7 +745,7 @@ std::vector<Shape*> inputShapes() {
     return shapes;
 }
 
-/* fresnelize() {
+/* refract() {
 
 } */
 
@@ -737,22 +787,24 @@ int main() {
     else {
         int shapeCount = 1 /* shapeCountDistro(re) */;
         shapes.reserve(shapeCount);
-        int onFloor = 0 /* floorDistro(re) */;
+        int onFloor = 1 /* floorDistro(re) */;
 
-        /* if(onFloor) {            
-            Matrix center = Matrix(475, 0, 5);
-            Matrix nonInitPt = Matrix(475, 0, 20);
+        if(onFloor) {            
+            Matrix center = Matrix(0, 400, 2880);
+            Matrix nonInitPt = Matrix(0, 400, 2879);
             Ray normal = Ray(center, nonInitPt);
-            double xDim = 950, zDim = 10;
+            // double xDim = 1900, zDim = 500;
             Color clr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
-            shapes.push_back(Plane(normal, center, zDim, xDim, clr));
+
+            Shape* ptr = new Shape(normal, center, /* zDim, xDim, */ clr);
+            shapes.push_back(ptr);
             shapeCount++;
-        } */
+        }
 
         for(int i = 0; i < shapeCount; i++) {
             Matrix center = Matrix(0, 400, 0);
             Color clr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
-            Shape* ptr = new Shape(center, 280, clr);
+            Shape* ptr = new Shape(center, 320, clr);
             shapes.push_back(ptr);
         }
 
