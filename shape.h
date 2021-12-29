@@ -9,14 +9,13 @@ struct Shape {
     Matrix center;
     Color clr;
     Ray normal;
-    double radius, height, width;
+    double radius;
 
     Shape();
     Shape(const Shape&);
-    // Shape(Color);
     Shape(Matrix c, double r, Color color);     // Sphere
-    Shape(Ray, Matrix /*, double, double */);         // Plane
-    Shape(Ray, Matrix, /* double, double, */ Color);  // Plane
+    Shape(Ray, Matrix);         // Plane
+    Shape(Ray, Matrix, Color);  // Plane
     ~Shape();
 
     double intersects(Ray);

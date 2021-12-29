@@ -14,10 +14,6 @@ struct Ray : Matrix {
 };
 
 struct Camera : Ray {
-    double picDist = 1;
-    Matrix right;
-    Matrix focus;
-
     Camera();
     Camera(Ray);
 };
