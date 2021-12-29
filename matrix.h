@@ -45,9 +45,10 @@ struct Matrix {
 
 struct Light : Matrix {
     Color clr;
+    double boost;
 
     Light();
-    Light(double, double, double, Color);
+    Light(double, double, double, Color, double);
 };
 
 #endif

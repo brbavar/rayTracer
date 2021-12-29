@@ -301,7 +301,9 @@ bool Ray::operator!=(Ray other) {
     return !(*this == other);
 }
 
-Camera::Camera() {}
+Camera::Camera() {
+    // focus = Matrix(0, 2, 0);
+}
 
 Camera::Camera(Ray ray) {
     entries.reserve(ray.entries.size());
@@ -313,6 +315,8 @@ Camera::Camera(Ray ray) {
         entries.push_back(coords);
     }
     unitDir = ray.unitDir;
+    /* right = Matrix(entries) + Matrix(1, 0, 0);
+    focus = Matrix(0, 2, 0); */
 }
 
 Shape::Shape() {}
@@ -325,6 +329,10 @@ Shape::Shape(const Shape& orig) {
         normal = orig.normal;
 }
 
+/* Shape::Shape(Color color) {
+    clr = color;
+} */
+
 Shape::Shape(Matrix c, double r, Color color) {
     center = c, radius = r;
     clr = color, type = "Sphere";
@@ -332,11 +340,17 @@ Shape::Shape(Matrix c, double r, Color color) {
 
 Shape::Shape(Ray r, Matrix c) {
     normal = r, center = c;
+    // double aspectRatio = w / h;
+    // locHeight = (w > h ? 1 / aspectRatio : 1);
+    // locWidth = (w > h ? 1 : aspectRatio);
     type = "Plane";
 }
 
 Shape::Shape(Ray r, Matrix c, Color color) {
     normal = r, center = c;
+    // double aspectRatio = w / h;
+    // locHeight = (w > h ? 1 / aspectRatio : 1);
+    // locWidth = (w > h ? 1 : aspectRatio);
     clr = color, type = "Plane";
 }
 
@@ -355,14 +369,25 @@ double Shape::intersects(Ray ray) {
             Matrix ptBtwn = ray + ray.unitDir * dist;
             double offset = sqrt( pow(radius, 2) - pow((center - ptBtwn).mag(), 2) );
             dist -= offset;
+            // std::cout << dist << std::endl;
             return dist;
         }
     }
+    /* if(type == "Plane") {
+        double denom = (normal.normalize().entries.empty() ? normal : normal.normalize()).dot(ray.unitDir);
+        if(denom != 0) {
+            double dist = (center - ray).dot(normal.normalize().entries.empty() ? normal : normal.normalize()) / denom;
+            // double dist = ray.entries[0][1] / (-ray.unitDir.entries[0][1]);
+            // std::cout << dist << std::endl;
+            if(dist >= 0)
+                return dist;
+        }
+    } */
     return -1;
 }
 
 bool Shape::operator==(Shape other) {
-    if(type != other.type)
+    if(type != other.type /* || clr != other.clr */)
         return false;
 
     bool sameCenter = true, sameDims = true, sameNormal = true;
@@ -501,6 +526,11 @@ double setBrightness(std::string type, Light light, Matrix nearestPt, Matrix nor
             surface at this point. */
         brightness -= angle / 1.5708 - angle * light.boost;
     }
+    /* if(type == "Plane") {
+        double dist = (light - nearestPt).mag();
+        if(dist > 0)
+            brightness /= dist;
+    } */
 
     if(brightness < 0)
         brightness = 0;
@@ -598,6 +628,35 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
                     if(minDist == dist)
                         nearestShape = *s;
                 }
+
+                // debugFile << "Type of shape: " << (*s).type << std::endl;
+                // debugFile << "minDist = " << minDist << std::endl;
+
+                /* debugFile << "Center of shape: ";
+                for(auto row : (*s).center.entries)
+                    for(double entry : row) 
+                        debugFile << entry << " ";
+                debugFile << std::endl;
+
+                debugFile << "Color of shape: " << (*s).clr.blue << " " << (*s).clr.green << " " 
+                    << (*s).clr.red << std::endl;
+
+                if((*s).type == "Sphere")
+                    debugFile << "Radius of shape: " << (*s).radius << std::endl;
+
+                if((*s).type == "Plane") {
+                    debugFile << "Normal to shape has origin ";
+                    for(auto row : (*s).normal.entries)
+                        for(double entry : row)
+                            debugFile << entry << "|";
+                    debugFile << " and direction ";
+                    for(auto row : (*s).normal.unitDir.entries)
+                        for(double entry : row)
+                            debugFile << entry << "|";
+                    debugFile << std::endl;
+                }
+
+                debugFile << std::endl; */
             }
 
             /* If minDist is less than infinity, the color of the pixel will depend on whether light reaches the shape at the point of 
@@ -611,6 +670,8 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
 
                 if(type == "Sphere")
                     normal = nearestPt - center;
+                /* if(type == "Plane")
+                    normal = nearestPt + Matrix(0,0,1); */
 
                 Matrix normalDir = normal.normalize();
                 // bool inside = camDir.dot(normal) > 0 ? true : false; //
@@ -618,6 +679,9 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
                 Color clr = nearestShape.clr;
                 double brightness = setBrightness(type, light, nearestPt, normalDir, pixel, clr);
                 bool lit = brightness > 0, shaded = false;
+                /* debugFile << "nearestShape = " << nearestShape.type << std::endl;
+                debugFile << "brightness = " << brightness << std::endl;
+                debugFile << "------------------------------------------------------------------------------------" << std::endl; */
 
                 /* Cast a ray from the nearest point of intersection to the light source to see if any other shape
                 is in the way, preventing the light from reaching said point. */
@@ -625,7 +689,80 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
                 for(Shape* s : shapes)
                     if(*s != nearestShape) {
                         dist = (*s).intersects(shadow);
-                        if(dist != -1) {    
+                        if(dist != -1) {   
+                            Matrix inrsc = shadow + shadow.unitDir * dist;
+
+                            debugFile << x << " " << z << " " << dist << std::endl;
+                            
+                            debugFile << "Type of nearestShape: " << nearestShape.type << std::endl;
+                            debugFile << "Type of shape casting shadow: " << (*s).type << std::endl;
+
+                            debugFile << "Center of nearestShape: ";
+                            for(auto row : nearestShape.center.entries)
+                                for(double entry : row) 
+                                    debugFile << entry << " ";
+                            debugFile << std::endl;
+                            debugFile << "Center of shape casting shadow: ";
+                            for(auto row : (*s).center.entries)
+                                for(double entry : row) 
+                                    debugFile << entry << " ";
+                            debugFile << std::endl;
+
+                            debugFile << "Color of nearestShape: " << nearestShape.clr.blue << " " << nearestShape.clr.green << " " 
+                                << nearestShape.clr.red << std::endl;
+                            debugFile << "Color of shape casting shadow: " << (*s).clr.blue << " " << (*s).clr.green << " " 
+                                << (*s).clr.red << std::endl;
+
+                            if(nearestShape.type == "Sphere")
+                                debugFile << "Radius of nearestShape: " << nearestShape.radius << std::endl;
+                            if((*s).type == "Sphere")
+                                debugFile << "Radius of shape casting shadow: " << (*s).radius << std::endl;
+
+                            if(nearestShape.type == "Plane") {
+                                debugFile << "Normal to nearestShape has origin ";
+                                for(auto row : nearestShape.normal.entries)
+                                    for(double entry : row)
+                                        debugFile << entry << "|";
+                                debugFile << " and direction ";
+                                for(auto row : nearestShape.normal.unitDir.entries)
+                                    for(double entry : row)
+                                        debugFile << entry << "|";
+                                debugFile << std::endl;
+                            }
+                            if((*s).type == "Plane") {
+                                debugFile << "Normal to shape casting shadow has origin ";
+                                for(auto row : (*s).normal.entries)
+                                    for(double entry : row)
+                                        debugFile << entry << "|";
+                                debugFile << " and direction ";
+                                for(auto row : (*s).normal.unitDir.entries)
+                                    for(double entry : row)
+                                        debugFile << entry << "|";
+                                debugFile << std::endl;
+                            }
+
+                            debugFile << "Coordinates of nearestPt: ";
+                            for(auto row : nearestPt.entries)
+                                for(double entry : row)
+                                    debugFile << entry << " ";
+                            debugFile << std::endl;
+                            debugFile << "Coordinates of shadow intersection: ";
+                            for(auto row : inrsc.entries)
+                                for(double entry : row)
+                                    debugFile << entry << " ";
+                            debugFile << std::endl;
+
+                            debugFile << "Direction of shadow: ";
+                            for(auto row : shadow.unitDir.entries)
+                                for(double entry : row)
+                                    debugFile << entry << " ";
+                            debugFile << std::endl;
+
+                            debugFile << "(Using ==) Shape casting shadow is" << ( *s == nearestShape ? " " : " NOT " ) << "nearestShape" << std::endl;
+                            debugFile << "(Using !=) Shape casting shadow is" << ( *s != nearestShape ? " NOT " : " " ) << "nearestShape" << std::endl;
+                            debugFile << std::endl;
+                            
+                            // std::cout << nearestShape.type << " " << (*s).type << std::endl;
                             shaded = true;
                             break;
                         }
@@ -767,7 +904,18 @@ int main() {
     }
     else {
         int objCount = 1 /* shapeCountDistro(re) */;
-        shapes.reserve(objCount);
+        shapes.reserve(objCount /* + 1 */);
+        // int onFloor = 1 /* floorDistro(re) */;
+
+        /* if(onFloor) {            
+            Matrix center = Matrix(0, 400, 2880);
+            Matrix nonInitPt = Matrix(0, 400, 2879);
+            Ray normal = Ray(center, nonInitPt);
+            Color clr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
+
+            Shape* ptr = new Shape(normal, center, clr);
+            shapes.push_back(ptr);
+        } */
 
         for(int i = 0; i < objCount; i++) {
             Matrix center = Matrix(500, 210, 140);
@@ -775,6 +923,8 @@ int main() {
             Shape* ptr = new Shape(center, 70, clr);
             shapes.push_back(ptr);
         }
+
+        // std::cout << (onFloor ? "Shapes are on floor." : "Shapes are free-floating.") << std::endl;
     }
 
     std::cout << "Light is at (" << light.entries[0][0] << ", " << light.entries[0][1] << ", " << light.entries[0][2] << ")." << std::endl;
