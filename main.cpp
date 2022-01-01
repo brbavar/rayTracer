@@ -481,9 +481,9 @@ void render(Light light, int picHeight, int picWidth, std::vector<Sphere*> spher
                 }
             }
 
-            /* If minDist is less than infinity, the color of the pixel will depend on whether light reaches the sphere at the point of 
-                intersection. It will also depend on the angle between the light and normal at that intersection. On the other hand, if 
-                minDist is still infinity, meaning cam ray intersects no sphere, then pixel's color remains unchanged. */
+            /* If minDist is less than infinity, the color of the pixel will depend on the angle between the light and normal 
+               at that intersection. On the other hand, if minDist is still infinity, meaning cam ray intersects no sphere, 
+               then pixel's color remains unchanged. */
             if(minDist < INF) {
                 Matrix nearestPt = cam + cam.unitDir * minDist;
                 Matrix center = nearestSphere.center;
