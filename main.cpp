@@ -536,6 +536,6 @@ int main() {
 
     render(light, picHeight, picWidth, spheres);
 
-    for(Sphere* ptr : spheres) // Deallocating here may not be necessary
+    for(Sphere* ptr : spheres)
         delete ptr;
 }
