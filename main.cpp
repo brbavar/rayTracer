@@ -3,26 +3,23 @@
 #include <cmath>
 #include <random>
 #include <chrono>
-#include "shape.h"
+#include "sphere.h"
 
 
 Color::Color() {}
 
 Color::Color(const Color& orig) {
     blue = orig.blue, green = orig.green, red = orig.red;
-    opacity = orig.opacity;
 }
 
-Color::Color(double b, double g, double r, double o) {
+Color::Color(double b, double g, double r) {
     blue = b, green = g, red = r;
-    opacity = o;
 }
 
 Color::~Color() {}
 
 bool Color::operator==(Color other) {
-    return blue == other.blue && green == other.green && red == other.red 
-        && opacity == other.opacity;
+    return blue == other.blue && green == other.green && red == other.red;
 }
 
 bool Color::operator!=(Color other) {
@@ -262,7 +259,7 @@ void Matrix::operator=(const Matrix& orig) {
 
 Light::Light() {}
 
-Light::Light(double x, double y, double z, Color color, double b) {
+Light::Light(double x, double y, double z, double b) {
     entries.reserve(1);
     std::vector<double> coords;
     coords.reserve(3);
@@ -271,7 +268,7 @@ Light::Light(double x, double y, double z, Color color, double b) {
     coords.push_back(z);
     entries.push_back(coords);
 
-    clr = color, boost = b;
+    boost = b;
 }
 
 Ray::Ray() {}
@@ -315,192 +312,87 @@ Camera::Camera(Ray ray) {
     unitDir = ray.unitDir;
 }
 
-Shape::Shape() {}
-
-Shape::Shape(const Shape& orig) {
-    center = orig.center, radius = orig.radius;
-    clr = orig.clr, type = orig.type;
-
-    if(orig.type == "Plane")
-        normal = orig.normal;
-}
-
-Shape::Shape(Matrix c, double r, Color color) {
-    center = c, radius = r;
-    clr = color, type = "Sphere";
-}
-
-Shape::Shape(Ray r, Matrix c) {
-    normal = r, center = c;
-    type = "Plane";
-}
-
-Shape::Shape(Ray r, Matrix c, Color color) {
-    normal = r, center = c;
-    clr = color, type = "Plane";
-}
-
-Shape::~Shape() {}
-
-double Shape::intersects(Ray ray) {
-    if(type == "Sphere") {
-        // Solving for coefficients derived from equation for sphere
-        double a = ray.unitDir.dot(ray.unitDir);
-        Matrix initPt = ray - center;
-        double b = 2 * initPt.dot(ray.unitDir);
-        double c = initPt.dot(initPt) - pow(radius, 2);
-
-        if(b * b - 4 * a * c > 0) {
-            double dist = (center - ray).dot(ray.unitDir);
-            Matrix ptBtwn = ray + ray.unitDir * dist;
-            double offset = sqrt( pow(radius, 2) - pow((center - ptBtwn).mag(), 2) );
-            dist -= offset;
-            return dist;
-        }
-    }
-    return -1;
-}
-
-bool Shape::operator==(Shape other) {
-    if(type != other.type)
-        return false;
-
-    bool sameCenter = true, sameDims = true, sameNormal = true;
-    if(type == "Sphere" || type == "Plane")
-        sameCenter = center == other.center;
-    if(type == "Sphere")
-        sameDims = radius == other.radius;
-    if(type == "Plane")
-        sameNormal = normal == other.normal;
-
-    return sameCenter && sameDims && sameNormal;
-}
-
-bool Shape::operator!=(Shape other) {
-    return !(*this == other);
-}
-
-void Shape::operator=(const Shape& orig) {
-    center = orig.center, radius = orig.radius;
-    clr = orig.clr, type = orig.type;
-
-    if(orig.type == "Plane")
-        normal = orig.normal;
-}
-
-/* Sphere::Sphere() {
-    type = "Sphere";
-}
+Sphere::Sphere() {}
 
 Sphere::Sphere(const Sphere& orig) {
     center = orig.center, radius = orig.radius;
-    clr = orig.clr, type = orig.type;
+    clr = orig.clr;
 }
 
 Sphere::Sphere(Matrix c, double r, Color color) {
-    center = c, radius = r; 
-    clr = color, type = "Sphere";
+    center = c, radius = r;
+    clr = color;
 }
 
 Sphere::~Sphere() {}
 
-Plane::Plane() {
-    type = "Plane";
-}
+double Sphere::intersects(Ray ray) {
+    // Solving for coefficients derived from equation for sphere
+    double a = ray.unitDir.dot(ray.unitDir);
+    Matrix initPt = ray - center;
+    double b = 2 * initPt.dot(ray.unitDir);
+    double c = initPt.dot(initPt) - pow(radius, 2);
+    double dist;
 
-Plane::Plane(const Plane& orig) {
-    center = orig.center, radius = orig.radius;
-    clr = orig.clr, type = orig.type;
-    normal = orig.normal;
-}
-
-Plane::Plane(Ray r, Matrix c) {
-    normal = r, center = c;
-    // double aspectRatio = w / h;
-    // locHeight = (w > h ? 1 / aspectRatio : 1);
-    // locWidth = (w > h ? 1 : aspectRatio);
-    type = "Plane";
-}
-
-Plane::Plane(Ray r, Matrix c, Color color) {
-    normal = r, center = c;
-    // double aspectRatio = w / h;
-    // locHeight = (w > h ? 1 / aspectRatio : 1);
-    // locWidth = (w > h ? 1 : aspectRatio);
-    clr = color, type = "Plane";
-}
-
-Plane::~Plane() {} */
-
-
-void inputPicProps(int&, int&);
-double setBrightness(std::string, Light, Matrix, Matrix, char*, Color&);
-void render(Light, int, int, std::vector<Shape*>);
-void inputLight(Light&);
-std::vector<Shape*> inputShapes();
-
-
-void inputPicProps(int& picHeight, int& picWidth) {
-    std::cout << "Do you want the image to be 500 pixels tall and 700 pixels wide? (y/n) ";
-    char ans = ' ';
-
-    while(ans != 'y' && ans != 'Y' && ans != 'n' && ans != 'N') {
-        std::cin >> ans;
-        if(ans == 'n' || ans == 'N') {
-            std::cout << "How tall should the image be, in pixels? (Min height = 20px, max = 2160px) ";
-            int min = 20;
-            int max = 2160;
-            std::cin >> picHeight;
-            while(std::cin.fail() || picHeight < min || picHeight > max) {
-                std::cout << "Try again. You must enter an integer between " << min << " and " << max 
-                    << " (" << min << ", " << min + 1 << ", " << min + 2 << ", . . . " << max - 1 << ", " << max << "). ";
-                std::cin >> picHeight;
-            }
-
-            std::cout << "\nHow wide should the image be, in pixels? (Min width = 20px, max = 3840px) ";
-            max = 3840;
-            std::cin >> picWidth;
-            while(std::cin.fail() || picHeight < min || picHeight > max) {
-                std::cout << "Try again. You must enter an integer between " << min << " and " << max 
-                    << " (" << min << ", " << min + 1 << ", " << min + 2 << ", . . . " << max - 1 << ", " << max << "). ";
-                std::cin >> picWidth;
-            }
-        }
-        else
-            if(ans != 'y' && ans != 'Y') {
-                std::cout << "Sorry, what was that? Your answer must be 'y' (yes) or 'n' (no). ";
-                continue;
-            }
+    if(b * b - 4 * a * c > 0) {
+        dist = (center - ray).dot(ray.unitDir);
+        Matrix ptBtwn = ray + ray.unitDir * dist;
+        double offset = sqrt( pow(radius, 2) - pow((center - ptBtwn).mag(), 2) );
+        dist -= offset;
+        if(dist == -1)
+            return -1.1;
+        return dist;
     }
+    return -1;
 }
 
-double setBrightness(std::string type, Light light, Matrix nearestPt, Matrix normalDir, char* pixel, Color& clr) {
+bool Sphere::operator==(Sphere other) {
+    bool sameCenter = true, sameDims = true, sameNormal = true;
+
+    sameCenter = center == other.center;
+    sameDims = radius == other.radius;
+
+    return sameCenter && sameDims && sameNormal;
+}
+
+bool Sphere::operator!=(Sphere other) {
+    return !(*this == other);
+}
+
+void Sphere::operator=(const Sphere& orig) {
+    center = orig.center, radius = orig.radius;
+    clr = orig.clr;
+}
+
+
+double setBrightness(Light, Matrix, Matrix, char*, Color&);
+void render(Light, int, int, std::vector<Sphere*>);
+
+
+double setBrightness(Light light, Matrix nearestPt, Matrix normalDir, char* pixel, Color& clr) {
     double brightness = 1, angle;
 
-    if(type == "Sphere") {
-        Ray extendedLight = Ray(nearestPt, Matrix(light.entries));
+    Ray extendedLight = Ray(nearestPt, Matrix(light.entries));
 
-        // Get direction of light beam aimed at point of intersection.
-        Matrix lightDir = extendedLight.unitDir;
+    // Get direction of light beam aimed at point of intersection.
+    Matrix lightDir = extendedLight.unitDir;
 
-        /* Get the angle between the direction of the light that reaches this point and the direction of the normal 
-            vector to the shape at this point on its surface. That will determine the brightness of this point. */
-        if(lightDir.mag() > 0) {
-            angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
-            std::cout << angle << std::endl;
-        }
-        else
-            return brightness;
-
-        /* If the angle between the light and the normal at this point is greater than 1.5708 radians, it is greater 
-            than 90 degrees. That means this point is all the way on the other side of the shape, relative to the point 
-            at which the light strikes it. So no light reaches this point. It will thus be fully shaded (black). 
-            Otherwise, light reaches the point. So the color of the shape becomes the color of this pixel; the 
-            darkness or lightness of the pixel's color is determined by multiplying each RGB component of the shape's 
-            intrinsic color by the brightness factor calculated below. The smaller the angle, the brighter the shape's 
-            surface at this point. */
-        brightness -= angle / 1.5708 - angle * light.boost;
+    /* Get the angle between the direction of the light that reaches this point and the direction of the normal 
+        vector to the sphere at this point on its surface. That will determine the brightness of this point. */
+    if(lightDir.mag() > 0) {
+        angle = acos( normalDir.dot(lightDir) / (normalDir.mag() * lightDir.mag()) );
     }
+    else
+        return brightness;
+
+    /* If the angle between the light and the normal at this point is greater than 1.5708 radians, it is greater 
+        than 90 degrees. That means this point is all the way on the other side of the sphere, relative to the point 
+        at which the light strikes it. So no light reaches this point. It will thus be fully shaded (black). 
+        Otherwise, light reaches the point. So the color of the sphere becomes the color of this pixel; the 
+        darkness or lightness of the pixel's color is determined by multiplying each RGB component of the sphere's 
+        intrinsic color by the brightness factor calculated below. The smaller the angle, the brighter the sphere's 
+        surface at this point. */
+    brightness -= angle / 1.5708 - angle * light.boost;
 
     if(brightness < 0)
         brightness = 0;
@@ -514,7 +406,7 @@ double setBrightness(std::string type, Light light, Matrix nearestPt, Matrix nor
     return brightness;
 }
 
-void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes) {
+void render(Light light, int picHeight, int picWidth, std::vector<Sphere*> spheres) {
     int area = picWidth * picHeight;
     int size = 4 * area;
     int fileSize = size + 54;
@@ -560,8 +452,8 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
     dibHeader[29] = (char)ppi;
     dibHeader[30] = (char)(ppi>>8);
     dibHeader[31] = (char)(ppi>>16);
-    dibHeader[32] = (char)(ppi>>24);
-
+    dibHeader[32] = (char)(ppi>>24);  
+    
     std::ofstream imgFile;
     imgFile.open("result.bmp");
     imgFile.write(header, 14);
@@ -569,71 +461,41 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
 
     char pixel[] = {0,0,0};
 
-    std::ofstream debugFile;
-    debugFile.open("debug.txt");
-
-    /* unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
-    std::default_random_engine re(seed);
-    std::uniform_real_distribution<double> sampleDistro(0, 0.999999999999999); */
-
-    /* Iterate over every pixel in the image, setting its color based on both the intrinsic properties of the shape
+    /* Iterate over every pixel in the image, setting its color based on both the intrinsic properties of the sphere
        and the lighting. */
     for(double y = 0; y < picHeight; y++)
         for(double x = 0; x < picWidth; x++) {
-            Ray cam = Ray(Matrix(0, 0, -1000), Matrix(x, y, 0));  // Point camera at current pixel sample
+            Ray cam = Ray(Matrix(0, 210, -1000), Matrix(x, y, 0));  // Point camera at current pixel sample
             
             const double INF = std::numeric_limits<double>::infinity();
             double minDist = INF, dist;
-            Shape nearestShape;
+            Sphere nearestSphere;
 
-            for(Shape* s : shapes) {
+            for(Sphere* s : spheres) {
                 dist = (*s).intersects(cam);
                 if(dist != -1) {
                     Matrix nearestPt = cam + cam.unitDir * minDist;
-                    debugFile << "Intersection found " 
-                        << ( nearestPt.entries[0][3] < 0 ? "behind " : "in front of " ) 
-                        << "camera lens! dist = " << dist << std::endl;
-                    debugFile << std::endl;
                     minDist = std::min(minDist, dist);
                     if(minDist == dist)
-                        nearestShape = *s;
+                        nearestSphere = *s;
                 }
             }
 
-            /* If minDist is less than infinity, the color of the pixel will depend on whether light reaches the shape at the point of 
+            /* If minDist is less than infinity, the color of the pixel will depend on whether light reaches the sphere at the point of 
                 intersection. It will also depend on the angle between the light and normal at that intersection. On the other hand, if 
-                minDist is still infinity, meaning cam ray intersects no shape, then pixel's color remains unchanged. */
+                minDist is still infinity, meaning cam ray intersects no sphere, then pixel's color remains unchanged. */
             if(minDist < INF) {
                 Matrix nearestPt = cam + cam.unitDir * minDist;
-                std::string type = nearestShape.type;
-                Matrix center = nearestShape.center;
-                Matrix normal;
-
-                if(type == "Sphere")
-                    normal = nearestPt - center;
-
+                Matrix center = nearestSphere.center;
+                Matrix normal = nearestPt - center;
                 Matrix normalDir = normal.normalize();
-                // bool inside = camDir.dot(normal) > 0 ? true : false; //
 
-                Color clr = nearestShape.clr;
-                double brightness = setBrightness(type, light, nearestPt, normalDir, pixel, clr);
-                bool lit = brightness > 0, shaded = false;
+                Color clr = nearestSphere.clr;
+                double brightness = setBrightness(light, nearestPt, normalDir, pixel, clr);
+                bool lit = brightness > 0;
 
-                /* Cast a ray from the nearest point of intersection to the light source to see if any other shape
-                is in the way, preventing the light from reaching said point. */
-                /* Ray shadow = Ray(light, nearestPt);
-                for(Shape* s : shapes)
-                    if(*s != nearestShape) {
-                        dist = (*s).intersects(shadow);
-                        if(dist != -1) {    
-                            shaded = true;
-                            break;
-                        }
-                    } */
-
-                /* If angle is small enough for light to reach intersection point, and no shape casts shadow over that point, 
-                then give pixel same color as shape. */
-                if(lit && !shaded) {
+                // If angle is small enough for light to reach intersection point, then give pixel same color as sphere.
+                if(lit) {
                     pixel[0] = floor(clr.blue * 255);
                     pixel[1] = floor(clr.green * 255);
                     pixel[2] = floor(clr.red * 255);
@@ -646,141 +508,34 @@ void render(Light light, int picHeight, int picWidth, std::vector<Shape*> shapes
                 pixel[j] = 0;
         }
 
-    debugFile.close();
     imgFile.close();
 }
 
-void inputLight(Light& light) {
-    std::cout << "\nDo you want to place the light source elsewhere than (" << light.entries[0][0] << ", " 
-        << light.entries[0][1] << ", " << light.entries[0][2] << ")? (y/n) ";
-    char ans = ' ';
-
-    while(ans != 'y' && ans != 'Y' && ans != 'n' && ans != 'N') {
-        std::cin >> ans;
-        if(ans == 'y' || ans == 'Y') {
-            std::cout << "\nWhere would you like to place the light source?\nx = ";
-            std::cin >> light.entries[0][0];        
-            std::cout << "y = ";
-            std::cin >> light.entries[0][1];
-            std::cout << "z = ";
-            std::cin >> light.entries[0][2];
-
-            std::cout << "Sounds good. What color should the light be? Give the RGB values. \n r = ";
-            std::cin >> light.clr.red;
-            std::cout << "g = ";
-            std::cin >> light.clr.green;
-            std::cout << "b = ";
-            std::cin >> light.clr.blue;
-        }
-        else
-            if(ans != 'n' && ans != 'N') {
-                std::cout << "Sorry, what was that? Your answer must be 'y' (yes) or 'n' (no). ";
-                continue;
-            }
-    }
-}
-
-std::vector<Shape*> inputShapes() {
-    std::vector<Shape*> shapes;
-    Matrix c = Matrix(0, 0, 0);
-    double r;
-    Color clr = Color();
-
-    std::cout << "\nWhat type of shape would you like to add to the scene? (Options: sphere) ";
-    std::string ans = "";
-
-    while(ans != "sphere") {
-        std::cin >> ans;
-        if(ans == "sphere") {
-            std::cout << "Nice choice. Where should the center of the sphere be?\nx = ";
-            std::cin >> c.entries[0][0];
-            std::cout << "y = ";
-            std::cin >> c.entries[0][1];
-            std::cout << "z = ";
-            std::cin >> c.entries[0][2];
-
-            std::cout << "All right. What should the radius of the sphere be?\nd = ";
-            std::cin >> r;
-
-            std::cout << "Splendid! What color should the sphere be painted? Give the RGB values. \nr = ";
-            std::cin >> clr.red;
-            std::cout << "g = ";
-            std::cin >> clr.green;
-            std::cout << "b = ";
-            std::cin >> clr.blue;
-
-            std::cout << "One more thing: How see-through should the sphere be, on a scale of 0 to 10 (0 being not "
-                << "at all see-through, and 10 being as see-through as possible)? ";
-            std::cin >> clr.opacity;
-            clr.opacity = (10 - clr.opacity) / 10;
-
-            Shape* ptr = new Shape(c, r, clr);
-            shapes.push_back(ptr);
-        }
-        else {
-            std::cout << "Sorry, what was that? Your answer must be \"sphere.\" ";
-            continue;
-        }
-    }
-
-    return shapes;
-}
-
-/* refract() {
-
-} */
-
-
 int main() {
-    int picHeight = 500, picWidth = 700;
-
     unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
     std::default_random_engine re(seed);
-
-    std::normal_distribution<double> radDistro(500, 10);
-    
-    std::uniform_real_distribution<double> xDistro(-picWidth / 2, picWidth);
-    std::uniform_real_distribution<double> yDistro(50, 300); 
-    std::uniform_real_distribution<double> zDistro(-picHeight / 2, picHeight);
-    
     std::uniform_real_distribution<double> clrDistro(0, 1);
-    
-    std::uniform_int_distribution<int> shapeCountDistro(1, 10);
-    std::uniform_int_distribution<int> floorDistro(0, 1);
 
-    Color lightClr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
-    Light light = Light(400, 180, 40, lightClr, .15);
+    Color lightClr = Color(clrDistro(re), clrDistro(re), clrDistro(re));
+    Light light = Light(400, 500, -300, 0);
 
-    std::vector<Shape*> shapes;
-    char ans = ' ';
+    std::vector<Sphere*> spheres;
+    spheres.reserve(2);
 
-    std::cout << "Would you like to design a custom image, or just generate a random one? (c, r) ";
-    std::cin >> ans;
-    while(ans != 'c' && ans != 'r') {
-        std::cout << "You should answer either 'c' for custom or 'r' for random. ";
-        std::cin >> ans;
-    }
-    if(ans == 'c') {
-        inputPicProps(picHeight, picWidth);
-        inputLight(light);
-        shapes = inputShapes();
-    }
-    else {
-        int objCount = 1 /* shapeCountDistro(re) */;
-        shapes.reserve(objCount);
+    Matrix center = Matrix(350, 210, 0);
+    Color clr = Color(clrDistro(re), clrDistro(re), clrDistro(re));
+    Sphere* ptr = new Sphere(center, 70, clr);
+    spheres.push_back(ptr);
 
-        for(int i = 0; i < objCount; i++) {
-            Matrix center = Matrix(500, 210, 140);
-            Color clr = Color(clrDistro(re), clrDistro(re), clrDistro(re), clrDistro(re));
-            Shape* ptr = new Shape(center, 70, clr);
-            shapes.push_back(ptr);
-        }
-    }
+    center = Matrix(350, -5500, 0);
+    clr = Color(clrDistro(re), clrDistro(re), clrDistro(re));
+    ptr = new Sphere(center, 5640, clr);
+    spheres.push_back(ptr);
 
-    std::cout << "Light is at (" << light.entries[0][0] << ", " << light.entries[0][1] << ", " << light.entries[0][2] << ")." << std::endl;
+    int picHeight = 500, picWidth = 700;
 
-    render(light, picHeight, picWidth, shapes);
+    render(light, picHeight, picWidth, spheres);
 
-    for(Shape* ptr : shapes) // Deallocating here may not be necessary
+    for(Sphere* ptr : spheres) // Deallocating here may not be necessary
         delete ptr;
 }
