@@ -21,8 +21,11 @@ struct Matrix {
     // Returns magnitude of vector represented by matrix
     double mag();
 
+    // Returns normalization of this matrix
     Matrix normalize();
 
+    /* Returns true if this matrix has (a) same num of rows as the other and 
+       (b) same num of cols in each row as the other. Returns false otherwise. */
     bool rowsColsEq(Matrix);
 
     // Returns dot product of this vector with another
@@ -31,6 +34,7 @@ struct Matrix {
     // Returns cross product of this vector with another
     Matrix cross(Matrix);
 
+    // Returns another matrix whose entries have same magnitudes, opposite signs
     Matrix negate();
 
     // * overloaded for both scalar and matrix multiplication
