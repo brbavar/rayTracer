@@ -15,7 +15,7 @@ struct Matrix {
     ~Matrix();
 
     /* Returns distance between point at coordinates in this matrix
-       and point at coords in another matrix */
+       and point at coordinates in another matrix */
     double distanceTo(Matrix);
 
     // Returns magnitude of vector represented by matrix
