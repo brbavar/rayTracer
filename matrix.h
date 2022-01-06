@@ -14,8 +14,8 @@ struct Matrix {
     Matrix(double, double, double);  // Constructs matrices with three entries (height 1, width 3)
     ~Matrix();
 
-    /* Returns distance between point at coordinates in this->entries 
-       and point at coords in member vector, entries, of matrix argument */
+    /* Returns distance between point at coordinates in this->entries and
+       point at coords in entries vector that is member of matrix argument */
     double distanceTo(Matrix);
 
     // Returns magnitude of vector represented by matrix
