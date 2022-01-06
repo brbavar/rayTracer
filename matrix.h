@@ -10,8 +10,8 @@ struct Matrix {
     Matrix();
     Matrix(const Matrix&);
     Matrix(std::vector<std::vector<double> >);  // Constructs matrices of arbitrary height and width
-    Matrix(double, double);  // Constructs 2D matrices
-    Matrix(double, double, double);  // Constructs 3D matrices
+    Matrix(double, double);  // Constructs matrices with two entries (height 1, width 2)
+    Matrix(double, double, double);  // Constructs matrices with three entries (height 1, width 3)
     ~Matrix();
 
     /* Returns distance between point at coordinates in this->entries 
