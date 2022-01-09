@@ -534,7 +534,9 @@ int main() {
 
     int picHeight = 500, picWidth = 700;
 
+    printf("Rendering...\n");
     render(light, picHeight, picWidth, spheres);
+    printf("Done!\n");
 
     for(Sphere* ptr : spheres)
         delete ptr;
