@@ -539,7 +539,4 @@ int main() {
     printf("Done!\n");
     std::string cmd = "open result.bmp";
     system(cmd.c_str());
-
-    for(Sphere* ptr : spheres)
-        delete ptr;
 }
