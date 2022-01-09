@@ -4,7 +4,7 @@ This ray tracer creates bitmap images of spherical objects illuminated by a ligh
 You can see the kinds of shaded graphics this program is capable of creating by looking through the images in the folder `samplePics`. The files are too big for the images to be displayed on the GitHub pages dedicated to those files. But if you click "View raw" on any of those pages, you'll be able to see the picture. The very last sample, `sample5.bmp`, is most representative of the images this ray tracer is currently hard-coded to produce; it is shown below. That said, it's not too difficult to tweak the code to generate images similar to the other samples.
 
 <p align='center'>
-  <img style='border: 2px solid white' src='https://raw.githubusercontent.com/brbavar/rayTracer/main/samplePics/sample5.bmp'>
+  <img src='https://raw.githubusercontent.com/brbavar/rayTracer/main/samplePics/sample5.bmp'>
 </p>
 
 # Rendering
