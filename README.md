@@ -13,4 +13,4 @@ If you would like to make more graphics, but you don't care to customize them, t
 The illumination, number, positions, shapes, and sizes of the 3D objects don't change when you rerun the program. However, the colors of the shapes vary randomly from one execution to the next.
 
 # Customization
-You'll need to edit the source code directly to customize the 3D graphics. To do that, clone this repo on the command line by navigating to the directory you want to put it in and then executing<br>`git clone https://github.com/brbavar/rayTracer.git`.
+You'll need to edit the source code directly to customize the 3D graphics. To do that, clone this repo on the command line by navigating to the directory you want to put it in and then executing:<br>`git clone https://github.com/brbavar/rayTracer.git`
