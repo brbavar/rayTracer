@@ -73,6 +73,24 @@
         "vector": "cpp",
         "*.tcc": "cpp",
         "memory_resource": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "__bits": "cpp",
+        "__tree": "cpp",
+        "codecvt": "cpp",
+        "csignal": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "stack": "cpp",
+        "strstream": "cpp",
+        "typeindex": "cpp",
+        "unordered_set": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp",
+        "hash_map": "cpp",
+        "cfenv": "cpp",
+        "cinttypes": "cpp"
     }
 }
