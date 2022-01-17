@@ -8,7 +8,7 @@ You can see the kinds of shaded graphics this program is capable of creating by 
 </p>
 
 # Rendering
-If you would like to make more graphics, but you don't care to customize them, the only file you need is the C++ executable `trace`. Download that file, navigate to the directory containing it, and then run it with the command `./trace`. The message "Rendering..." will immediately show up in the console, and in a matter of seconds it should say "Done!" That means the output file, `result.bmp`, in the present directory is done being populated with pixels. At that point the image file is opened automatically for you to view.
+If you would like to make more graphics, but you don't care to customize them, the only file you need is the C++ executable `trace`. Download that file, navigate to the directory containing it, and then run it with the command `./trace` (or `trace` in `cmd.exe` on Windows). The message "Rendering..." will immediately show up in the console, and in a matter of seconds it should say "Done!" That means the output file, `result.bmp`, in the present directory is done being populated with pixels. At that point the image file is opened automatically for you to view.
 
 The illumination, number, positions, shapes, and sizes of the 3D objects don't change when you rerun the program. However, the colors of the shapes vary randomly from one execution to the next.
 
