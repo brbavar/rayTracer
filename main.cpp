@@ -537,6 +537,6 @@ int main() {
     printf("Rendering...\n");
     render(light, picHeight, picWidth, spheres);
     printf("Done!\n");
-    std::string cmd = "open result.bmp";
-    system(cmd.c_str());
+    system("open result.bmp");
+    system("\"result.bmp\"");
 }
