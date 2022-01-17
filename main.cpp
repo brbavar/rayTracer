@@ -182,7 +182,7 @@ Matrix Matrix::operator*(double scalar) {
     return result;
 }
 
-/* Call this matrix A and the other matrix B. In order to be multiplied, A must have exactly as
+/* Call this matrix A and the other matrix B. If we are to multiply A by B, A must have exactly as
    many columns as B does rows. If this condition is unsatisfied, an empty matrix is returned. 
    Multiplying A and B gives us AB, which has exactly as many rows as A and exactly as many 
    columns as B. */
