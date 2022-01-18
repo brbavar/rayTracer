@@ -529,8 +529,8 @@ void displayBMP() {
     if(canRun("open result.bmp", 35))
         system("open result.bmp");
     else
-        if(canRun("\"result.bmp\"", 35))
-            system("\"result.bmp\"");
+        if(canRun("result.bmp", 35))
+            system("result.bmp");
 }
 
 int main() {
