@@ -4,7 +4,7 @@ This ray tracer for Mac creates bitmap images of spherical objects illuminated b
 You can see the kinds of shaded graphics this program is capable of creating by looking through the images in the folder `samplePics`. The files are too big for the images to be displayed on the pages of this repo dedicated to those files. But if you click "View raw" on any of those pages, you'll be able to see the picture. The very last sample, `sample5.bmp`, is most representative of the images this ray tracer is currently hard-coded to produce; it is shown below. That said, it's not too difficult to tweak the code to generate images similar to the other samples.
 
 <p align='center'>
-  <img src='https://raw.githubusercontent.com/brbavar/rayTracer/main/samplePics/sample5.bmp'>
+  <img src='https://raw.githubusercontent.com/brbavar/rayTracerMac/main/samplePics/sample5.bmp'>
 </p>
 
 # Rendering
@@ -13,4 +13,4 @@ If you would like to make more graphics, but you don't care to customize them, t
 The illumination, number, positions, shapes, and sizes of the 3D objects don't change when you rerun the program. However, the colors of the shapes vary randomly from one execution to the next.
 
 # Customization
-You'll need to edit the source code directly to customize the 3D graphics. To do that, clone this repo on the command line by navigating to the directory you want to put it in and then executing:<br>`git clone https://github.com/brbavar/rayTracer.git`
+You'll need to edit the source code directly to customize the 3D graphics. To do that, clone this repo on the command line by navigating to the directory you want to put it in and then executing:<br>`git clone https://github.com/brbavar/rayTracerMac.git`
