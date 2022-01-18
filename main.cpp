@@ -367,6 +367,8 @@ void Sphere::operator=(const Sphere& orig) {
 
 double setBrightness(Light, Matrix, Matrix, char*, Color&);
 void render(Light, int, int, std::vector<Sphere*>);
+bool canRun(std::string, int);
+void displayBMP();
 
 
 double setBrightness(Light light, Matrix nearestPt, Matrix normalDir, char* pixel, Color& clr) {
@@ -511,6 +513,26 @@ void render(Light light, int picHeight, int picWidth, std::vector<Sphere*> spher
     imgFile.close();
 }
 
+bool canRun(std::string cmd, int size) {
+    std::string output = "";
+    char buf[size];
+    FILE* stream = popen(cmd.c_str(), "r");
+    if(stream)
+        while(!feof(stream))
+            if(fgets(buf, size, stream) != NULL)
+                output += buf;
+    pclose(stream);
+    return output != "sh: result.bmp: command not found";
+}
+
+void displayBMP() {
+    if(canRun("open result.bmp", 35))
+        system("open result.bmp");
+    else
+        if(canRun("\"result.bmp\"", 35));
+            system("\"result.bmp\"");
+}
+
 int main() {
     unsigned int seed = std::chrono::steady_clock::now().time_since_epoch().count();
     std::default_random_engine re(seed);
@@ -537,6 +559,5 @@ int main() {
     printf("Rendering...\n");
     render(light, picHeight, picWidth, spheres);
     printf("Done!\n");
-    system("open result.bmp");
-    system("\"result.bmp\"");
+    displayBMP();
 }
