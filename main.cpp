@@ -522,7 +522,7 @@ bool canRun(std::string cmd, int size) {
             if(fgets(buf, size, stream) != NULL)
                 output += buf;
     pclose(stream);
-    return output != "sh: result.bmp: command not found\n";
+    return output != "sh: result.bmp: command not found";
 }
 
 void displayBMP() {
