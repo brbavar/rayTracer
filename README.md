@@ -8,7 +8,7 @@ You can see the kinds of shaded graphics this program is capable of creating by 
 </p>
 
 # Rendering
-If you would like to make more graphics, but you don't care to customize them, follow these instructions. Navigate to the directory you want to put this repo in and run:
+If you would like to make more graphics, but you don't care to customize them, follow these instructions. On your Mac, navigate to the directory you want to put this repo in and run:
   ```
   git clone https://github.com/brbavar/rayTracer.git
   cd rayTracer
