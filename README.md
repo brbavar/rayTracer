@@ -16,7 +16,7 @@ If you would like to make more graphics, but you don't care to customize them, f
   ```
 The message "Rendering..." will immediately show up in the console, and in a matter of seconds it should say "Done!" That means the output file, `result.bmp`, in the present directory is done being populated with pixels. At that point the image file is opened automatically for you to view.
 
-The illumination, number, positions, shapes, and sizes of the 3D objects don't change when you rerun the program. However, the colors of the shapes vary randomly from one execution to the next.
+The illumination, number, positions, shapes, and sizes of the 3D objects don't change when you rerun the program. However, the colors of the shapes vary randomly from one execution to the next. (Though the lighting is fixed, it may appear to vary, since some colors are brighter than others.)
 
 # Customization
 You'll need to edit the source code directly to customize the 3D graphics. To do that, clone this repo on the command line by navigating to the directory you want to put it in and then executing:
