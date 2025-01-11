@@ -4,14 +4,15 @@
 #include <vector>
 #include "color.h"
 
-struct Matrix {
-    std::vector<std::vector<double> > entries;
+struct Matrix
+{
+    std::vector<std::vector<double>> entries;
 
     Matrix();
-    Matrix(const Matrix&);
-    Matrix(std::vector<std::vector<double> >);  // Constructs matrices of arbitrary height and width
-    Matrix(double, double);  // Constructs matrices with two entries (height 1, width 2)
-    Matrix(double, double, double);  // Constructs matrices with three entries (height 1, width 3)
+    Matrix(const Matrix &);
+    Matrix(std::vector<std::vector<double>>); // Constructs matrices of arbitrary height and width
+    Matrix(double, double);                   // Constructs matrices with two entries (height 1, width 2)
+    Matrix(double, double, double);           // Constructs matrices with three entries (height 1, width 3)
     ~Matrix();
 
     /* Returns distance between point at coordinates in this matrix
@@ -24,7 +25,7 @@ struct Matrix {
     // Returns normalization of this matrix
     Matrix normalize();
 
-    /* Returns true if this matrix has (a) same num of rows as the other and 
+    /* Returns true if this matrix has (a) same num of rows as the other and
        (b) same num of cols in each row as the other. Returns false otherwise. */
     bool rowsColsEq(Matrix);
 
@@ -44,14 +45,7 @@ struct Matrix {
     Matrix operator-(Matrix);
     bool operator==(Matrix);
     bool operator!=(Matrix);
-    void operator=(const Matrix&);
-};
-
-struct Light : Matrix {
-    double boost;
-
-    Light();
-    Light(double, double, double, double);
+    void operator=(const Matrix &);
 };
 
 #endif
