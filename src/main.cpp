@@ -489,7 +489,7 @@ void render(Matrix light, int picHeight, int picWidth, std::vector<Sphere *> sph
     dibHeader[32] = (char)(ppi >> 24);
 
     std::ofstream imgFile;
-    imgFile.open("result.bmp");
+    imgFile.open("result.bmp", std::ios::out | std::ios::binary);
     imgFile.write(header, 14);
     imgFile.write(dibHeader, 40);
 
