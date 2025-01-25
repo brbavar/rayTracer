@@ -595,5 +595,7 @@ int main()
     system("open result.bmp");
 #elif _WIN32
     system("start result.bmp");
+#elif __linux__
+    system("xdg-open result.bmp");
 #endif
 }
