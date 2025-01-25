@@ -590,6 +590,10 @@ int main()
     // Display message indicating that rendering is finished
     printf("Done!\n");
 
-    // Show rendered image
+// Show rendered image
+#ifdef __APPLE__
     system("open result.bmp");
+#elif _WIN32
+    system("start result.bmp");
+#endif
 }
